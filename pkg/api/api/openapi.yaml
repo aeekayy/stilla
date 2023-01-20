@@ -1,0 +1,406 @@
+openapi: 3.1.0
+info:
+  contact:
+    email: apiteam@swagger.io
+  description: A configuration service that stores and retrieves configuration.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Buffet Config Manager
+  version: 0.1.0
+externalDocs:
+  description: Find out more about Swagger
+  url: http://swagger.io
+servers:
+- url: https://buffet.aeekay.co/v1
+tags:
+- description: Configuration Managmenet API
+  externalDocs:
+    description: Find out more
+    url: http://swagger.io
+  name: configuration
+paths:
+  /configs:
+    get:
+      description: "Returns a paginated list of configurations. Todo: review authorization\
+        \ to retrieve only those configurations available to a user."
+      operationId: getConfigs
+      parameters:
+      - description: The number of configurations to return
+        explode: true
+        in: query
+        name: limit
+        required: false
+        schema: {}
+        style: form
+      - description: The offset of configurations when returning the list of configurations.
+        explode: true
+        in: query
+        name: offset
+        required: false
+        schema: {}
+        style: form
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: '#/components/schemas/ConfigStore'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad request. Error with the query.
+      summary: Get a paginated list of configurations
+      tags:
+      - config
+  /config:
+    post:
+      description: Adds a new configuration.
+      operationId: addConfig
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfigIn'
+        description: Add a new configuration object
+        required: true
+      responses:
+        "201":
+          $ref: '#/components/responses/CreateConfigResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad request. Error with the request.
+      summary: Create a new configuration and configuration value
+      tags:
+      - config
+  /config/{configId}:
+    get:
+      description: Retrieve a configuration by configuration ID
+      operationId: getConfigByID
+      parameters:
+      - description: ID of the configuration to get
+        explode: false
+        in: path
+        name: configId
+        required: true
+        schema:
+          format: uuid
+        style: simple
+      responses:
+        "200":
+          $ref: '#/components/responses/GetConfigResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad request. Error with the request.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not found
+      summary: Retrieve a configuration by configuration ID
+      tags:
+      - config
+    patch:
+      description: Update a configuration by configuration ID
+      operationId: updateConfigByID
+      parameters:
+      - description: ID of the configuration to update
+        explode: false
+        in: path
+        name: configId
+        required: true
+        schema:
+          format: uuid
+        style: simple
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConfigIn'
+        description: Update configuration object
+        required: true
+      responses:
+        "200":
+          $ref: '#/components/responses/GetConfigResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad request. Error with the request.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not found
+      summary: Update a configuration by configuration ID
+      tags:
+      - config
+  /record:
+    post:
+      description: ""
+      operationId: addRecord
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditLogIn'
+        description: The audit record that needs to be added
+        required: true
+      responses:
+        "200":
+          $ref: '#/components/responses/AddAuditLogResponse'
+        "405":
+          description: Invalid input
+      summary: Add a new audit record to the database
+      tags:
+      - audit
+  /record/{recordId}:
+    get:
+      description: Retrieves a specific audit log entry for review.
+      operationId: getRecord
+      parameters:
+      - description: ID of the record to get
+        explode: false
+        in: path
+        name: recordId
+        required: true
+        schema:
+          format: uuid
+        style: simple
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLog'
+          description: Return audit log record
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad request. Error with the request.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not found
+      summary: Retrieves an audit log entry
+      tags:
+      - audit
+  /ping:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Healthcheck'
+          description: OK
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad request. Error with the request.
+      summary: Healthcheck for the API
+      tags:
+      - health
+components:
+  responses:
+    NotFound:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+      description: The specified resource was not found
+    AddAuditLogResponse:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IdResponse'
+      description: Add audit log
+    CreateConfigResponse:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/IdResponse'
+      description: Configuration ID after configuration creation
+    GetConfigResponse:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ConfigStore'
+      description: Get configuration object
+  schemas:
+    AuditLogIn:
+      example:
+        referer: ""
+        headers:
+        - X-Forwarded-For: 42.24.56.13
+        protocol: tcp
+        request_type: ""
+        auth: ""
+        service: config-service
+        host: test.aeekay.io
+        uri: /test
+        operation: ""
+        entity: ""
+      properties:
+        referer:
+          format: ipv4
+        service:
+          example: config-service
+        uri:
+          example: /test
+          format: uri
+        host:
+          example: test.aeekay.io
+          format: hostname
+        operation: {}
+        auth: {}
+        entity: {}
+        request_type:
+          enum:
+          - GET
+          - HEAD
+          - POST
+          - DELETE
+        protocol:
+          example: tcp
+        headers:
+          example:
+          - X-Forwarded-For: 42.24.56.13
+      required:
+      - host
+      - operation
+    ConfigIn:
+      example:
+        config_name: ""
+        owner: ""
+        config: ""
+        parents: ""
+      properties:
+        config_name:
+          description: Unique name for the configuration
+        owner: {}
+        config: {}
+        parents:
+          items: {}
+      required:
+      - config_name
+      - owner
+    UpdateConfigIn:
+      example:
+        config_name: ""
+        requester: ""
+        config: ""
+        parents: ""
+      properties:
+        config_name:
+          description: Unique name for the configuration
+        requester: {}
+        config: {}
+        parents:
+          items: {}
+      required:
+      - config_name
+    ConfigStore:
+      properties:
+        id:
+          format: uuid
+        config_name:
+          description: Unique name for the configuration
+        owner: {}
+        config_version:
+          $ref: '#/components/schemas/ConfigVersion'
+        parents:
+          items:
+            $ref: '#/components/schemas/ConfigStore'
+        created:
+          format: date-time
+        modified:
+          format: date-time
+      required:
+      - config_name
+      - owner
+    IdResponse:
+      properties:
+        id:
+          format: uuid
+    ConfigVersion:
+      properties:
+        id:
+          format: uuid
+        config: {}
+        config_name: {}
+        createdBy: {}
+        created:
+          format: date-time
+    AuditLog:
+      example:
+        referer: ""
+        headers: ""
+        protocol: ""
+        request_type: ""
+        auth: ""
+        service: ""
+        host: ""
+        id: ""
+        uri: ""
+        operation: ""
+        entity: ""
+      properties:
+        id:
+          format: uuid
+        referer:
+          format: ipv4
+        service: {}
+        uri:
+          format: uri
+        host:
+          format: hostname
+        operation: {}
+        auth: {}
+        entity: {}
+        request_type:
+          enum:
+          - GET
+          - HEAD
+          - POST
+          - DELETE
+        protocol: {}
+        headers: {}
+      required:
+      - host
+      - operation
+    Error:
+      properties:
+        code: {}
+        message: {}
+      required:
+      - code
+      - message
+    Healthcheck:
+      example:
+        status: ""
+      properties:
+        status:
+          enum:
+          - OK
+          - ERROR
