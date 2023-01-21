@@ -1,0 +1,8 @@
+documentation:
+  - "**/*.md"
+
+protobuf:
+  - "api/protobuf/**"
+
+apispec:
+  - "api/openapi.yaml"
