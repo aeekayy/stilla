@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/aeekayy/stilla/pkg/api/models"
+	"github.com/aeekayy/stilla/lib/db"
 	"github.com/aeekayy/stilla/pkg/utils"
 	pb "github.com/aeekayy/stilla/api/protobuf/messages"
 )
@@ -74,6 +75,32 @@ func (a *AuditEvent) ToByteSlice() ([]byte, error) {
 	enc := gob.NewEncoder(buf)
 	err := enc.Encode(a)
 	return buf.Bytes(), err
+}
+
+// RegisterHost registers a host and provides the requestor an API key
+func (d *DAL) RegisterHost(ctx context.Context, hostRegisterIn models.HostRegisterIn, req interface{}) (string, error) {
+	requestDetails := make(map[string]interface{})
+
+	httpReq := req.(*http.Request)
+	requestDetails["request.method"] = utils.SanitizeMessageValue(httpReq.Method)
+	requestDetails["request.header"] = utils.SanitizeMessageValue(httpReq.Header)
+	requestDetails["request.protocol"] = utils.SanitizeMessageValue(httpReq.Proto)
+	requestDetails["request.contentlength"] = utils.SanitizeMessageValue(httpReq.ContentLength)
+	requestDetails["request.host"] = utils.SanitizeMessageValue(httpReq.Host)
+	requestDetails["request.uri"] = utils.SanitizeMessageValue(httpReq.RequestURI)
+	requestDetails["request.remoteaddr"] = utils.SanitizeMessageValue(httpReq.RemoteAddr)
+	requestDetails["host"] = utils.SanitizeMessageValue(hostRegisterIn)
+
+	d.EmitMessage("config.audit", "HostRegister", requestDetails)
+
+	apiKey, err := db.GenerateAPIKey(hostRegisterIn.Name, hostRegisterIn.Tags)
+	d.Logger.Infof("%v", hostRegisterIn)
+
+	if err != nil {
+		return "", fmt.Errorf("error registering host: %s", err)
+	}
+
+	return apiKey, err
 }
 
 // InsertConfig insert a configuration object into the document store. This
