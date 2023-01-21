@@ -80,3 +80,12 @@ func GetAPIKey(keyID string) (APIKey, error) {
 
 	return apiKey, err
 }
+
+// GenerateAPIKey generate an api key and a public key for a new host
+func GenerateAPIKey(name string, tags []string) (string, error) {
+	var apiKeyID string
+
+	err := dbConn.QueryRow(*dbCtx, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&apiKeyID)
+
+	return apiKeyID, err
+}

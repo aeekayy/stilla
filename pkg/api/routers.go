@@ -94,6 +94,13 @@ var routes = Routes{
 	},
 
 	{
+		"HostRegister",
+		http.MethodPost,
+		"/host/register",
+		HostRegister,
+	},
+
+	{
 		"PingGet",
 		http.MethodGet,
 		"/ping",
