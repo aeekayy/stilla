@@ -91,7 +91,7 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 		// Kafka producer
 		kafkaProducer, err = kafka.NewProducer(config.GetKafkaConfig())
 		sugar.Infof("%s", config.Kafka)
-		
+
 		if err != nil {
 			sugar.Fatalf("failed to create producer: %s\n", err)
 			return nil, err

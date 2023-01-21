@@ -22,10 +22,10 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/aeekayy/stilla/pkg/api/models"
-	"github.com/aeekayy/stilla/lib/db"
-	"github.com/aeekayy/stilla/pkg/utils"
 	pb "github.com/aeekayy/stilla/api/protobuf/messages"
+	"github.com/aeekayy/stilla/lib/db"
+	"github.com/aeekayy/stilla/pkg/api/models"
+	"github.com/aeekayy/stilla/pkg/utils"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 	config_collection         = "config"
 	config_version_collection = "config_version"
 	AUDIT_EVENT               = "audit"
-	SERVICE_NAME		= "stilla"
+	SERVICE_NAME              = "stilla"
 )
 
 // DAL Data Access Layer struct for maintaining and managing
@@ -130,9 +130,9 @@ func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req in
 
 	sanitizedConfigName := utils.SanitizeMongoInput(configIn.ConfigName)
 	filter := bson.D{
-			{ Key: "$where", Value: bson.D{
-				primitive.E{ Key: "config_name", Value: sanitizedConfigName},
-			},
+		{Key: "$where", Value: bson.D{
+			primitive.E{Key: "config_name", Value: sanitizedConfigName},
+		},
 		},
 	}
 	// see if there's an existing record
@@ -382,9 +382,9 @@ func (d *DAL) UpdateConfigByID(ctx context.Context, configID string, updateConfi
 
 	sanitizedConfigID := utils.SanitizeMongoInput(configID)
 	filter := bson.D{
-			{ Key: "$where", Value: bson.D{
-				primitive.E{ Key: "_id", Value: sanitizedConfigID},
-			},
+		{Key: "$where", Value: bson.D{
+			primitive.E{Key: "_id", Value: sanitizedConfigID},
+		},
 		},
 	}
 	// see if there's an existing record
@@ -457,7 +457,7 @@ func (d *DAL) EmitMessage(messageType, funcName string, body map[string]interfac
 			Topic:       messageType,
 			MessageType: pb.AuditLog_AUDIT,
 			FuncName:    funcName,
-			Service:	SERVICE_NAME,
+			Service:     SERVICE_NAME,
 		}
 
 		// Write the new address book back to disk.

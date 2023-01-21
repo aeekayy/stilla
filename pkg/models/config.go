@@ -17,10 +17,10 @@ type Config struct {
 	DocDB       DocumentDatabase       `yaml:"docdb", json:"docdb"`
 	Server      Server                 `yaml:"server",json:"server"`
 	Kafka       map[string]interface{} `yaml:"kafka", json:"kafka"`
-	Audit bool					`yaml:"audit", json:"audit"`
+	Audit       bool                   `yaml:"audit", json:"audit"`
 }
 
-// GetKafkaConfig retrieves a Kafka.ConfigMap compatible struct from 
+// GetKafkaConfig retrieves a Kafka.ConfigMap compatible struct from
 // our configuration. Viper supports nested configuration. However, we
 // need a flatten struct for Kafka
 func (c *Config) GetKafkaConfig() *kafka.ConfigMap {
@@ -32,7 +32,7 @@ func (c *Config) GetKafkaConfig() *kafka.ConfigMap {
 }
 
 // flattenKafkaConfigMap converts a nested struct into a flatten config map
-// TODO this is specifcally for Kafka.ConfigMap. Maybe open this up to other 
+// TODO this is specifcally for Kafka.ConfigMap. Maybe open this up to other
 // structs
 func flattenKafkaConfigMap(prefix string, src map[string]interface{}, cm *kafka.ConfigMap) {
 	if prefix != "" {
