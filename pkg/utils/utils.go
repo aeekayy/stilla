@@ -37,3 +37,12 @@ func SanitizeMessageValue(i interface{}) interface{} {
 
 	return nil
 }
+
+// SanitizeLogMessage removes user input from the log output
+func SanitizeLogMessage(log, userInput string) string {
+	cleanUserInput := userInput + "****"
+	if len(userInput) > 3 {
+		cleanUserInput = userInput[0:3] + "****"
+	}
+	return strings.Replace(log, userInput, cleanUserInput, -1)
+}
