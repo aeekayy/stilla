@@ -94,7 +94,7 @@ func (d *DAL) RegisterHost(ctx context.Context, hostRegisterIn models.HostRegist
 	d.EmitMessage("config.audit", "HostRegister", requestDetails)
 
 	apiKey, err := db.GenerateAPIKey(hostRegisterIn.Name, hostRegisterIn.Tags)
-	d.Logger.Infof("%v", hostRegisterIn)
+	d.Logger.Infof("Generated API key")
 
 	if err != nil {
 		return "", fmt.Errorf("error registering host: %s", err)
@@ -131,8 +131,8 @@ func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req in
 	sanitizedConfigName := utils.SanitizeMongoInput(configIn.ConfigName)
 	filter := bson.D{
 		{Key: "$where", Value: bson.D{
-			primitive.E{Key: "config_name", Value: sanitizedConfigName},
-		},
+				primitive.E{Key: "config_name", Value: sanitizedConfigName},
+			},
 		},
 	}
 	// see if there's an existing record
@@ -228,7 +228,7 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 			d.Logger.Errorf("unable to retrieve config: %v", err)
 			return nil, fmt.Errorf("unable to retrieve config: %v", err)
 		}
-		d.Logger.Infof("cache hit for %s", cache_key)
+		d.Logger.Infof(utils.SanitizeLogMessage("cache hit for %s", cache_key))
 		return resp, nil
 	} else if err != persistence.ErrCacheMiss {
 		d.Logger.Errorf("unable to retrieve config: %v", err)
@@ -277,7 +277,7 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 
 	result["config"] = version_result
 
-	d.Logger.Infof("setting cache for %s", cache_key)
+	d.Logger.Infof(utils.SanitizeLogMessage("setting cache for %s", cache_key))
 	bsonBin, err := bson.Marshal(result)
 	if err != nil {
 		d.Logger.Errorf("error writing to cache: %v", err)

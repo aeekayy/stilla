@@ -3,6 +3,7 @@ package utils
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"google.golang.org/protobuf/types/known/structpb"
@@ -11,7 +12,9 @@ import (
 // SanitizeMongoInput sanitize Mongo input to guard against
 // NoSQL injection
 func SanitizeMongoInput(s string) string {
-	return strings.Trim(s, " $/^\\")
+	m1 := regexp.MustCompile(`/^\$|\./g`)
+	// return strings.Trim(s, " $/^\\")
+	return m1.ReplaceAllString(s, "-")
 }
 
 // MapToProtobufStruct convert a map to a struct. This helps to
@@ -44,5 +47,6 @@ func SanitizeLogMessage(log, userInput string) string {
 	if len(userInput) > 3 {
 		cleanUserInput = userInput[0:3] + "****"
 	}
-	return strings.Replace(log, userInput, cleanUserInput, -1)
+	fullLog := fmt.Sprintf(log, userInput)
+	return strings.Replace(fullLog, userInput, cleanUserInput, -1)
 }
