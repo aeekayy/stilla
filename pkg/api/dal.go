@@ -228,7 +228,8 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 			d.Logger.Errorf("unable to retrieve config: %v", err)
 			return nil, fmt.Errorf("unable to retrieve config: %v", err)
 		}
-		d.Logger.Infof(utils.SanitizeLogMessage("cache hit for %s", cache_key))
+		logLine := utils.SanitizeLogMessage("cache hit for %s", cache_key)
+		d.Logger.Infof(logLine)
 		return resp, nil
 	} else if err != persistence.ErrCacheMiss {
 		d.Logger.Errorf("unable to retrieve config: %v", err)
@@ -276,8 +277,8 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 	}
 
 	result["config"] = version_result
-
-	d.Logger.Infof(utils.SanitizeLogMessage("setting cache for %s", cache_key))
+	logLine := utils.SanitizeLogMessage("setting cache for %s", cache_key)
+	d.Logger.Infof(logLine)
 	bsonBin, err := bson.Marshal(result)
 	if err != nil {
 		d.Logger.Errorf("error writing to cache: %v", err)
