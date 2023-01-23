@@ -264,6 +264,7 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 	err = config_version_col.FindOne(
 		ctx,
 		bson.D{{"_id", bson.M{"$eq": result["config_version"]}}},
+		options.FindOne().SetProjection(bson.M{"_id": 0, "checksum.Subtype": 0}),
 	).Decode(&version_result)
 
 	if err != nil {
