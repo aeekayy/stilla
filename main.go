@@ -22,9 +22,15 @@ const (
 var (
 	limit ratelimit.Limiter
 	rps   = flag.Int("rps", 1000, "request per second")
+	configFile string
 )
 
+func init() {
+	flag.StringVar(&configFile, "config", "", "Configuration file for Stilla")
+}
+
 func main() {
+	flag.Parse()
 	ctx := context.Background()
 
 	// start the logger
@@ -37,8 +43,11 @@ func main() {
 	sugar := logger.Sugar()
 
 	sugar.Info("Starting Stilla")
+	if configFile != "" {
+		sugar.Infof("Using the configuration file %s", configFile)
+	}
 	// get the configuration
-	config, err := models.GetConfig()
+	config, err := models.GetConfig(configFile)
 	if err != nil {
 		sugar.Errorf("There's an error retrieving the configuration: %s", err)
 	}

@@ -30,9 +30,11 @@ docker_run() {
     if [ "$3" != "" ]; then
         env="-e $3"
     fi
-    docker run $ports -ti --detach $env --name $container_name $1 && touch ${container_name}.pid
+    docker run $ports -tid --network=stilla-test $env --name $container_name $1 && touch ${container_name}.pid
 }
 
+info "Create stilla-test Docker network"
+docker network create -d bridge stilla-test
 info "Setting up the dependencies for tests"
 readarray images < <(yqa e -o=j -I=0 '.images[]' scripts/settings.yml )
 for images in "${images[@]}"; do
@@ -42,5 +44,5 @@ for images in "${images[@]}"; do
     echo "image: $image"
     echo "ports: $ports"
     echo "env: $env"
-    docker_run $image $ports $env
+    docker_run $image "$ports" "$env"
 done

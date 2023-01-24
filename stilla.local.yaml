@@ -1,0 +1,24 @@
+---
+environment: "dev"
+database:
+  username: "postgres"
+  password: "postgres"
+  host: "localhost"
+  name: "stilla"
+cache:
+  type: "redis"
+  host: "localhost"
+  username: "default"
+  password: ""
+docdb:
+  username: "mongo"
+  password: "mongo"
+  host: "localhost"
+  name: "configdb"
+server:
+  port: 8080
+  timeout: 15s
+kafka:
+  bootstrap.servers: "localhost:9092"
+  session.timeout.ms: 45000
+audit: true

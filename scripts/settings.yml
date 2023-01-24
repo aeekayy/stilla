@@ -23,8 +23,11 @@ images:
   env:
   - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
   - ALLOW_PLAINTEXT_LISTENER: yes
-  - KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+  - KAFKA_CFG_ZOOKEEPER_CONNECT: stilla-bitnami-zookeeper:2181
 -  name: mongo
    image: mongo:6
    ports:
     - 27017:27017
+   env:
+   - MONGO_INITDB_ROOT_USERNAME: mongo
+   - MONGO_INITDB_ROOT_PASSWORD: mongo

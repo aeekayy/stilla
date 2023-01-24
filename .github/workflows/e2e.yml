@@ -35,7 +35,7 @@ jobs:
         # Docker Hub image
         image: mongo
         options: >-
-          --health-cmd "mongosh -c 'db.runCommand({ping: 1})'"
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -53,6 +53,11 @@ jobs:
       # Downloads a copy of the code in your repository before running CI tests
       - name: Check out repository code
         uses: actions/checkout@v3
+
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1
+        with:
+          version: '3.21'
 
       - name: Build Stilla
         run: make build

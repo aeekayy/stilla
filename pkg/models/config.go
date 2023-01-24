@@ -82,12 +82,15 @@ type Server struct {
 }
 
 // GetConfig retrieves the Viper configuration for the service
-func GetConfig() (*Config, error) {
+func GetConfig(in string) (*Config, error) {
 	// retrieve the configuration using viper
 	viper.SetConfigName("stilla")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("$HOME")
 	viper.AddConfigPath(".")
+	if in != "" {
+		viper.SetConfigFile(in)
+	}
 	err := viper.ReadInConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
