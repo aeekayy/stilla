@@ -13,7 +13,7 @@ gen-api:
 
 .PHONY: install-proto-go
 install-proto-go:
-	go get github.com/golang/protobuf/protoc-gen-go
+	go get google.golang.org/protobuf/protoc-gen-go
 	go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
 
 .PHONY: gen-protobuf
