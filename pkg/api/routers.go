@@ -101,6 +101,13 @@ var routes = Routes{
 	},
 
 	{
+		"HostLogin",
+		http.MethodPost,
+		"/host/login",
+		HostLogin,
+	},
+
+	{
 		"PingGet",
 		http.MethodGet,
 		"/ping",

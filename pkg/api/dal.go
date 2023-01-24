@@ -103,6 +103,33 @@ func (d *DAL) RegisterHost(ctx context.Context, hostRegisterIn models.HostRegist
 	return apiKey, err
 }
 
+// LoginHost uses the API Key of a host and validates it. Creates a new session if the key is valid
+func (d *DAL) LoginHost(ctx context.Context, hostLoginIn models.HostLoginIn, req interface{}) (string, error) {
+	requestDetails := make(map[string]interface{})
+
+	httpReq := req.(*http.Request)
+	requestDetails["request.method"] = utils.SanitizeMessageValue(httpReq.Method)
+	requestDetails["request.header"] = utils.SanitizeMessageValue(httpReq.Header)
+	requestDetails["request.protocol"] = utils.SanitizeMessageValue(httpReq.Proto)
+	requestDetails["request.contentlength"] = utils.SanitizeMessageValue(httpReq.ContentLength)
+	requestDetails["request.host"] = utils.SanitizeMessageValue(httpReq.Host)
+	requestDetails["request.uri"] = utils.SanitizeMessageValue(httpReq.RequestURI)
+	requestDetails["request.remoteaddr"] = utils.SanitizeMessageValue(httpReq.RemoteAddr)
+	requestDetails["host"] = utils.SanitizeMessageValue(hostLoginIn)
+
+	d.EmitMessage("config.audit", "HostLogin", requestDetails)
+
+	hostKey, err := db.ValidateAPIKey(hostLoginIn.APIKey)
+
+	if err != nil {
+		return "", fmt.Errorf("invalid api key for host: %s", err)
+	}
+
+	d.Logger.Infof("Valid API Key")
+
+	return hostKey, err
+}
+
 // InsertConfig insert a configuration object into the document store. This
 // creates a new ConfigVersion object. The ObjectID of the ConfigVersion is then
 // used to update the Config object reference for ConfigVersion

@@ -44,3 +44,30 @@ func HostRegister(dal *DAL) gin.HandlerFunc {
 
 	return gin.HandlerFunc(fn)
 }
+
+// HostLogin - Login host with an API key
+func HostLogin(dal *DAL) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		var req models.HostLoginIn
+
+		if err := c.ShouldBind(&req); err != nil {
+			dal.Logger.Errorf("unable to parse request: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to login host"})
+			return
+		}
+
+		sessKey, err := dal.LoginHost(context.TODO(), req, c.Request)
+
+		if err != nil {
+			dal.Logger.Errorf("unable to login host: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to login host"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"data": sessKey,
+		})
+	}
+
+	return gin.HandlerFunc(fn)
+}

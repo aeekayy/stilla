@@ -15,6 +15,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
+	"github.com/go-session/gin-session"
 	"github.com/pkg/errors"
 	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
@@ -120,6 +121,9 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 		},
 		MaxAge: 12 * time.Hour,
 	}))
+
+	// use session for API Keys
+	router.Use(ginsession.New())
 
 	addr := fmt.Sprintf(":%d", config.Server.Port)
 	srv := &http.Server{

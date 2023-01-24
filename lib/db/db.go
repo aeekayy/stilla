@@ -89,3 +89,12 @@ func GenerateAPIKey(name string, tags []string) (string, error) {
 
 	return apiKeyID, err
 }
+
+// ValidateAPIKey validates an API Key for a host
+func ValidateAPIKey(id string) (string, error) {
+	var hostName string
+
+	err := dbConn.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostName)
+
+	return hostName, err
+}
