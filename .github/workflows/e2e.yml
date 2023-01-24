@@ -63,7 +63,7 @@ jobs:
         run: |
           make build
         env:
-          PATH: $PATH:$GOPATH/bin
+          GITHUB_PATH: ${GITHUB_PATH}:${GOPATH}/bin
 
       - name: Run Stilla
         run: ./stilla
