@@ -10,7 +10,7 @@ type TestStruct struct {
 
 }
 
-func SanitizeMessageValueStruct(t *testing.T) {
+func TestSanitizeMessageValueStruct(t *testing.T) {
 	testStruct := TestStruct{}
 	v := SanitizeMessageValue(testStruct)
 	ans := reflect.ValueOf(v).Kind()
@@ -22,7 +22,7 @@ func SanitizeMessageValueStruct(t *testing.T) {
 	}
 }
 
-func SanitizeMessageValueBool(t *testing.T) {
+func TestSanitizeMessageValueBool(t *testing.T) {
 	testBool := false
 	v := SanitizeMessageValue(testBool)
 	ans := reflect.ValueOf(v).Kind()
@@ -34,7 +34,7 @@ func SanitizeMessageValueBool(t *testing.T) {
 	}
 }
 
-func PositiveSanitizeLogMessageTest(t *testing.T) {
+func TestPositiveSanitizeLogMessage(t *testing.T) {
 	userInput := "5ca9dba"
 	log := fmt.Sprintf("This is a log line with a cache key: %s", userInput)
 	expected := "This is a log line with a cache key: 5ca****"
@@ -46,7 +46,7 @@ func PositiveSanitizeLogMessageTest(t *testing.T) {
 	}
 }
 
-func PositiveSanitizeLogMessageMultipleTest(t *testing.T) {
+func TestPositiveSanitizeLogMessageMultiple(t *testing.T) {
 	userInput := "5ca9dba"
 	log := fmt.Sprintf("This is a log line with a cache key: %s", userInput)
 	expected := "This is a log line with a cache key: 5ca****. Cache key: 5ca****"
@@ -58,7 +58,7 @@ func PositiveSanitizeLogMessageMultipleTest(t *testing.T) {
 	}
 }
 
-func PositiveSanitizeLogMessageShortKeyTest(t *testing.T) {
+func TestPositiveSanitizeLogMessageShortKey(t *testing.T) {
 	userInput := "5c"
 	log := fmt.Sprintf("This is a log line with a cache key: %s", userInput)
 	expected := fmt.Sprintf("This is a log line with a cache key: %s****", userInput)
@@ -70,7 +70,7 @@ func PositiveSanitizeLogMessageShortKeyTest(t *testing.T) {
 	}
 }
 
-func PositiveSanitizeLogMessageEmptyTest(t *testing.T) {
+func TestPositiveSanitizeLogMessageEmpty(t *testing.T) {
 	userInput := ""
 	log := fmt.Sprintf("This is a log line with a cache key: %s", userInput)
 	expected := fmt.Sprintf("This is a log line with a cache key: %s****", userInput)
