@@ -16,6 +16,7 @@ import (
 
 	"github.com/aeekayy/stilla/pkg/api/models"
 	"github.com/gin-gonic/gin"
+	"github.com/gin-gonic/contrib/sessions"
 )
 
 // HostRegister - Register host for an API key
@@ -56,7 +57,9 @@ func HostLogin(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		sessKey, err := dal.LoginHost(context.TODO(), req, c.Request)
+		hostID, err := dal.LoginHost(context.TODO(), req, c.Request)
+
+		session := sessions.Default(c)
 
 		if err != nil {
 			dal.Logger.Errorf("unable to login host: %v", err)
@@ -64,8 +67,15 @@ func HostLogin(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
+		// Save the host ID in the session
+		session.Set(hostKey, hostID) // In real world usage you'd set this to the users ID
+		if err := session.Save(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
+			return
+		}
+
 		c.JSON(http.StatusOK, gin.H{
-			"data": sessKey,
+			"data": hostID,
 		})
 	}
 

@@ -50,6 +50,11 @@ func AddConfig(dal *DAL) gin.HandlerFunc {
 func GetConfigByID(dal *DAL) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		configID := c.Param("configId")
+		hostID := c.Param("hostId")
+
+		if hostID != "" {
+			AuthRequired(c)
+		}
 
 		if configID == "" {
 			dal.Logger.Errorf("unable to parse request")
@@ -57,7 +62,7 @@ func GetConfigByID(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		config, err := dal.GetConfig(context.TODO(), configID, c.Request)
+		config, err := dal.GetConfig(context.TODO(), configID, hostID, c.Request)
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve config: %v", err)

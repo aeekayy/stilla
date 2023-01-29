@@ -11,13 +11,14 @@ import (
 
 // Config main configuration struct for the service
 type Config struct {
-	Environment string                 `yaml:"enviornment", json:"environment"`
-	Database    Database               `yaml:"database", json:"database"`
-	Cache       Cache                  `yaml:"cache", json:"cache"`
-	DocDB       DocumentDatabase       `yaml:"docdb", json:"docdb"`
-	Server      Server                 `yaml:"server",json:"server"`
-	Kafka       map[string]interface{} `yaml:"kafka", json:"kafka"`
-	Audit       bool                   `yaml:"audit", json:"audit"`
+	Environment string                 `yaml:"enviornment" json:"environment"`
+	Database    Database               `yaml:"database" json:"database"`
+	Cache       Cache                  `yaml:"cache" json:"cache"`
+	DocDB       DocumentDatabase       `yaml:"docdb" json:"docdb"`
+	Server      Server                 `yaml:"server" json:"server"`
+	Kafka       map[string]interface{} `yaml:"kafka" json:"kafka"`
+	Audit       bool                   `yaml:"audit" json:"audit"`
+	SessionKey  string                 `yaml:"session_key" json:"session_key"`
 }
 
 // GetKafkaConfig retrieves a Kafka.ConfigMap compatible struct from

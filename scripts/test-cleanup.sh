@@ -18,8 +18,6 @@ cleanup_container() {
     rm -f $container_name.pid
 }
 
-info "Remove stilla-test Docker network"
-docker network rm stilla-test
 info "Cleaning up Docker images"
 readarray images < <(yqa e -o=j -I=0 '.images[]' scripts/settings.yml )
 for images in "${images[@]}"; do
@@ -27,3 +25,5 @@ for images in "${images[@]}"; do
     info "Removing $image"
     cleanup_container $image
 done
+info "Remove stilla-test Docker network"
+docker network rm stilla-test

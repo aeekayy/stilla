@@ -7,7 +7,6 @@ import (
 )
 
 type TestStruct struct {
-
 }
 
 func TestSanitizeMessageValueStruct(t *testing.T) {

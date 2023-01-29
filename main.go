@@ -20,8 +20,8 @@ const (
 )
 
 var (
-	limit ratelimit.Limiter
-	rps   = flag.Int("rps", 1000, "request per second")
+	limit      ratelimit.Limiter
+	rps        = flag.Int("rps", 1000, "request per second")
 	configFile string
 )
 

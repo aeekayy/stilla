@@ -46,6 +46,7 @@ type DAL struct {
 	DocumentStore *mongo.Client           `json:"document_store"`
 	Logger        *zap.SugaredLogger      `json:"logger"`
 	Producer      *kafka.Producer         `json:"producer"`
+	SessionKey    string                  `json:"session_key"`
 }
 
 // AuditEvent audit event struct for sending messages of service events
@@ -57,7 +58,7 @@ type AuditEvent struct {
 }
 
 // NewDAL returns a new DAL
-func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, dbConn *pgx.Conn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection string) *DAL {
+func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, dbConn *pgx.Conn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
 	return &DAL{
 		Context:       ctx,
 		Database:      dbConn,
@@ -66,6 +67,7 @@ func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, dbConn *pgx.Conn, do
 		Collection:    collection,
 		Logger:        sugar,
 		Producer:      producer,
+		SessionKey:    sessionKey,
 	}
 }
 
@@ -158,8 +160,8 @@ func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req in
 	sanitizedConfigName := utils.SanitizeMongoInput(configIn.ConfigName)
 	filter := bson.D{
 		{Key: "$where", Value: bson.D{
-				primitive.E{Key: "config_name", Value: sanitizedConfigName},
-			},
+			primitive.E{Key: "config_name", Value: sanitizedConfigName},
+		},
 		},
 	}
 	// see if there's an existing record
@@ -220,7 +222,7 @@ func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req in
 }
 
 // GetConfig returns a Config with the latest version of the ConfigVersion
-func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (bson.M, error) {
+func (d *DAL) GetConfig(ctx context.Context, configID string, hostID string, req interface{}) (bson.M, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -238,7 +240,11 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 	d.EmitMessage("config.audit", "GetConfig", requestDetails)
 	var resp bson.M
 	var respEnc string
-	cache_key := fmt.Sprintf("config_%s", configID)
+	var hostPrefix string
+	if hostID != "" {
+		hostPrefix = fmt.Sprintf("_%s", hostID)
+	}
+	cache_key := fmt.Sprintf("config_%s%s", configID, hostPrefix)
 	err := d.Cache.Get(cache_key, &respEnc)
 
 	config_col := d.DocumentStore.Database(config_db).Collection(config_collection)
@@ -271,9 +277,15 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 
 	var result bson.M
 	// see if there's an existing record
+	var searchFilter bson.D
+	if hostID != "" {
+		searchFilter = bson.D{{"_id", bson.M{"$eq": objID}}, {"host", bson.M{"$eq": hostID}}}
+	} else {
+		searchFilter = bson.D{{"_id", bson.M{"$eq": objID}}}
+	}
 	err = config_col.FindOne(
 		ctx,
-		bson.D{{"_id", bson.M{"$eq": objID}}},
+		searchFilter,
 	).Decode(&result)
 
 	if err != nil {
@@ -286,13 +298,16 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 		return nil, fmt.Errorf("error accessing the document: %s", err)
 	}
 
-	var version_result bson.M
+	var versionResult bson.M
 
 	err = config_version_col.FindOne(
 		ctx,
 		bson.D{{"_id", bson.M{"$eq": result["config_version"]}}},
 		options.FindOne().SetProjection(bson.M{"_id": 0, "checksum.Subtype": 0}),
-	).Decode(&version_result)
+	).Decode(&versionResult)
+
+	var configResponse models.ConfigResponse
+	configResponse.Ingest(&versionResult)
 
 	if err != nil {
 		// ErrNoDocuments means that the filter did not match any documents in
@@ -304,7 +319,7 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, req interface{}) (
 		return nil, fmt.Errorf("error accessing the document: %s", err)
 	}
 
-	result["config"] = version_result
+	result["config"] = configResponse
 	logLine := utils.SanitizeLogMessage("setting cache for %s", cache_key)
 	d.Logger.Infof(logLine)
 	bsonBin, err := bson.Marshal(result)

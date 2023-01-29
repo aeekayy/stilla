@@ -11,10 +11,15 @@
 package api
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
+
+const hostKey = "host"
 
 // Route is the information for every URI.
 type Route struct {
@@ -35,82 +40,199 @@ type Routes []Route
 func NewRouter(dal *DAL) *gin.Engine {
 	router := gin.Default()
 	router.SetTrustedProxies([]string{})
+
+	// Setup the cookie store for session management
+	router.Use(sessions.Sessions("stilla", sessions.NewCookieStore([]byte("dal.SessionKey"))))
+
 	// Simple group: v1
-	v1 := router.Group("/api/v1")
-	for _, route := range routes {
+	hostGroup := router.Group("/api/v1/host")
+	for _, route := range hostRoutes {
 		handler := route.HandlerFunc(dal)
 		switch route.Method {
 		case http.MethodGet:
-			v1.GET(route.Pattern, handler)
+			hostGroup.GET(route.Pattern, handler)
 		case http.MethodPost:
-			v1.POST(route.Pattern, handler)
+			hostGroup.POST(route.Pattern, handler)
 		case http.MethodPut:
-			v1.PUT(route.Pattern, handler)
+			hostGroup.PUT(route.Pattern, handler)
 		case http.MethodPatch:
-			v1.PATCH(route.Pattern, handler)
+			hostGroup.PATCH(route.Pattern, handler)
 		case http.MethodDelete:
-			v1.DELETE(route.Pattern, handler)
+			hostGroup.DELETE(route.Pattern, handler)
+		}
+	}
+
+	healthGroup := router.Group("/api/v1/health")
+	for _, route := range healthRoutes {
+		handler := route.HandlerFunc(dal)
+		switch route.Method {
+		case http.MethodGet:
+			healthGroup.GET(route.Pattern, handler)
+		case http.MethodPost:
+			healthGroup.POST(route.Pattern, handler)
+		case http.MethodPut:
+			healthGroup.PUT(route.Pattern, handler)
+		case http.MethodPatch:
+			healthGroup.PATCH(route.Pattern, handler)
+		case http.MethodDelete:
+			healthGroup.DELETE(route.Pattern, handler)
+		}
+	}
+
+	recordGroup := router.Group("/api/v1/records")
+	recordGroup.Use(AuthRequired)
+	for _, route := range recordRoutes {
+		handler := route.HandlerFunc(dal)
+		switch route.Method {
+		case http.MethodGet:
+			recordGroup.GET(route.Pattern, handler)
+		case http.MethodPost:
+			recordGroup.POST(route.Pattern, handler)
+		case http.MethodPut:
+			recordGroup.PUT(route.Pattern, handler)
+		case http.MethodPatch:
+			recordGroup.PATCH(route.Pattern, handler)
+		case http.MethodDelete:
+			recordGroup.DELETE(route.Pattern, handler)
+		}
+	}
+
+	configGroup := router.Group("/api/v1/config")
+	configGroup.Use(AuthRequired)
+	for _, route := range configRoutes {
+		handler := route.HandlerFunc(dal)
+		switch route.Method {
+		case http.MethodGet:
+			configGroup.GET(route.Pattern, handler)
+		case http.MethodPost:
+			configGroup.POST(route.Pattern, handler)
+		case http.MethodPut:
+			configGroup.PUT(route.Pattern, handler)
+		case http.MethodPatch:
+			configGroup.PATCH(route.Pattern, handler)
+		case http.MethodDelete:
+			configGroup.DELETE(route.Pattern, handler)
+		}
+	}
+
+	configsGroup := router.Group("/api/v1/configs")
+	configsGroup.Use(AuthRequired)
+	for _, route := range configsRoutes {
+		handler := route.HandlerFunc(dal)
+		switch route.Method {
+		case http.MethodGet:
+			configsGroup.GET(route.Pattern, handler)
+		case http.MethodPost:
+			configsGroup.POST(route.Pattern, handler)
+		case http.MethodPut:
+			configsGroup.PUT(route.Pattern, handler)
+		case http.MethodPatch:
+			configsGroup.PATCH(route.Pattern, handler)
+		case http.MethodDelete:
+			configsGroup.DELETE(route.Pattern, handler)
 		}
 	}
 
 	return router
 }
 
-var routes = Routes{
-
-	{
-		"GetRecords",
-		http.MethodGet,
-		"/records",
-		GetRecords,
-	},
-
-	{
-		"AddConfig",
-		http.MethodPost,
-		"/config",
-		AddConfig,
-	},
-
-	{
-		"GetConfigByID",
-		http.MethodGet,
-		"/config/:configId",
-		GetConfigByID,
-	},
-
-	{
-		"GetConfigs",
-		http.MethodGet,
-		"/configs",
-		GetConfigs,
-	},
-
-	{
-		"UpdateConfigByID",
-		http.MethodPatch,
-		"/config/:configId",
-		UpdateConfigByID,
-	},
-
+var hostRoutes = Routes{
 	{
 		"HostRegister",
 		http.MethodPost,
-		"/host/register",
+		"/register",
 		HostRegister,
 	},
 
 	{
 		"HostLogin",
 		http.MethodPost,
-		"/host/login",
+		"/login",
 		HostLogin,
 	},
 
 	{
+		"GetConfigByHostID",
+		http.MethodGet,
+		"/:hostId/config/:configId",
+		GetConfigByID,
+	},
+
+}
+
+var healthRoutes = Routes{
+	{
 		"PingGet",
 		http.MethodGet,
-		"/ping",
+		"/",
 		PingGet,
 	},
+}
+
+var recordRoutes = Routes{
+	{
+		"GetRecords",
+		http.MethodGet,
+		"/records",
+		GetRecords,
+	},
+}
+
+var configRoutes = Routes{
+	{
+		"AddConfig",
+		http.MethodPost,
+		"/",
+		AddConfig,
+	},
+
+	{
+		"GetConfigByID",
+		http.MethodGet,
+		"/:configId",
+		GetConfigByID,
+	},
+
+	{
+		"UpdateConfigByID",
+		http.MethodPatch,
+		"/:configId",
+		UpdateConfigByID,
+	},
+}
+var configsRoutes = Routes{
+	{
+		"GetConfigs",
+		http.MethodGet,
+		"/",
+		GetConfigs,
+	},
+}
+
+func extractToken(c *gin.Context) (string, bool) {
+	bearerToken := c.Request.Header.Get("Authorization")
+	if len(strings.Split(bearerToken, " ")) == 2 {
+		return strings.Split(bearerToken, " ")[1], true
+	}
+	return "", false
+}
+
+// AuthRequired is a simple middleware to check the session
+func AuthRequired(c *gin.Context) error {
+	var host string
+	token, ok := extractToken(c)
+	if ok {
+		// check for the token's validity
+	} else {
+		session := sessions.Default(c)
+		host = session.Get(hostKey)
+	}
+
+	if host == nil {
+		// Abort the request with the appropriate error code
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return errors.New("Unauthorized access")
+	}
+	// Continue down the chain to handler etc
+	c.Next()
 }

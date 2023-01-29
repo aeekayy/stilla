@@ -28,6 +28,7 @@ type ConfigResponse struct {
 	CreatedBy     string    `json:"created_by" bson:"created_by"`
 	Config        Config    `json:"config,omitempty" bson:"config"`
 	ConfigVersion string    `json:"config_version" bson:"config_version"`
+	Host          string    `json:"host" bson:"host"`
 	Parents       []string  `json:"parents,omitempty" bson:"parents"`
 	Tags          []string  `form:"tags" json:"tags" yaml:"tags" bson:"tags"`
 	Created       time.Time `json:"created",bson:"created"`
@@ -42,7 +43,7 @@ type Config struct {
 }
 
 type RawChecksum struct {
-	Data    Checksum `json:"Data" bson:"Data"`
+	Data Checksum `json:"Data" bson:"Data"`
 }
 
 func (c *Checksum) UnmarshalJSON(b []byte) error {
@@ -64,7 +65,7 @@ func (c Checksum) MarshalJSON() ([]byte, error) {
 
 func (c Checksum) GetBSON() (interface{}, error) {
 	return RawChecksum{
-		Data:    c,
+		Data: c,
 	}, nil
 }
 

@@ -71,6 +71,9 @@ components:
           type: "string"
         config:
           type: "object"
+        host:
+          type: "string"
+          format: "uuid"
         parents:
           type: array 
           items: 
@@ -291,6 +294,43 @@ paths:
             format: uuid
           required: true
           description: ID of the configuration to get
+      responses:
+        '200':
+          $ref: '#/components/responses/GetConfigResponse'
+        '400':
+          description: Bad request. Error with the request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /config/{hostId}/{configId}:
+    get:
+      tags:
+      - "config"
+      summary: "Retrieve a configuration by configuration ID and host ID"
+      description: "Retrieve a configuration by configuration ID and host ID"
+      operationId: "getConfigByHostID"
+      parameters:
+        - in: path
+          name: configId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the configuration to retrieve
+        - in: path
+          name: hostId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the host the configuration is attached to
       responses:
         '200':
           $ref: '#/components/responses/GetConfigResponse'
