@@ -42,7 +42,7 @@ func NewRouter(dal *DAL) *gin.Engine {
 
 	// Setup the cookie store for session management
 	// TODO: Make this optional
-	store, err := sessions.NewRedisStore(10, "tcp", dal.Config.Cache.Host, dal.Config.Cache.Host, []byte(dal.SessionKey))
+	store, err := sessions.NewRedisStore(10, "tcp", dal.Config.Cache.Host, dal.Config.Cache.Password, []byte(dal.SessionKey))
 
 	if err != nil {
 		dal.Logger.Errorf("error setting up cache for DAL: %s", err)
@@ -52,6 +52,7 @@ func NewRouter(dal *DAL) *gin.Engine {
 
 	// Simple group: v1
 	hostGroup := router.Group("/api/v1/host")
+	hostGroup.Use(AuthRequired)
 	for _, route := range hostRoutes {
 		handler := route.HandlerFunc(dal)
 		switch route.Method {
