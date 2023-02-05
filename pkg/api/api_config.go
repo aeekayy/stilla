@@ -52,10 +52,6 @@ func GetConfigByID(dal *DAL) gin.HandlerFunc {
 		configID := c.Param("configId")
 		hostID := c.Param("hostId")
 
-		if hostID != "" {
-			AuthRequired(c)
-		}
-
 		if configID == "" {
 			dal.Logger.Errorf("unable to parse request")
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to retrieve configuration"})

@@ -15,8 +15,8 @@ import (
 	"net/http"
 
 	"github.com/aeekayy/stilla/pkg/api/models"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-gonic/gin"
 )
 
 // HostRegister - Register host for an API key

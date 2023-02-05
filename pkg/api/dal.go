@@ -25,6 +25,7 @@ import (
 	pb "github.com/aeekayy/stilla/api/protobuf/messages"
 	"github.com/aeekayy/stilla/lib/db"
 	"github.com/aeekayy/stilla/pkg/api/models"
+	svcmodels "github.com/aeekayy/stilla/pkg/models"
 	"github.com/aeekayy/stilla/pkg/utils"
 )
 
@@ -41,6 +42,7 @@ const (
 type DAL struct {
 	Collection    string                  `json:"collection,omitempty"`
 	Cache         *persistence.RedisStore `json:"cache"`
+	Config        *svcmodels.Config       `json:"config"`
 	Database      *pgx.Conn               `json:"database"`
 	Context       *context.Context        `json:"context"`
 	DocumentStore *mongo.Client           `json:"document_store"`
@@ -57,10 +59,16 @@ type AuditEvent struct {
 	function    string      `json:"function"`
 }
 
+// HostCache cache for host
+type HostCache struct {
+	Hostname string `json:"hostname"`
+}
+
 // NewDAL returns a new DAL
-func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, dbConn *pgx.Conn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
+func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, config *svcmodels.Config, dbConn *pgx.Conn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
 	return &DAL{
 		Context:       ctx,
+		Config:        config,
 		Database:      dbConn,
 		DocumentStore: docStore,
 		Cache:         cache,
@@ -588,4 +596,16 @@ func (d *DAL) GetAuditLogs(ctx context.Context, offset string, limit string, req
 	}
 
 	return results, nil
+}
+
+func ValidateToken(token string) (string, bool, error) {
+	var resp string
+
+	resp, err := db.ValidateAPIKey(token)
+
+	if resp != "" {
+		return resp, true, nil
+	}
+
+	return "", false, fmt.Errorf("unable to retrieve host key: %s", err)
 }

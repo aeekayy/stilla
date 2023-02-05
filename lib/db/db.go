@@ -92,9 +92,9 @@ func GenerateAPIKey(name string, tags []string) (string, error) {
 
 // ValidateAPIKey validates an API Key for a host
 func ValidateAPIKey(id string) (string, error) {
-	var hostName string
+	var hostname string
 
-	err := dbConn.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostName)
+	err := dbConn.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostname)
 
-	return hostName, err
+	return hostname, err
 }

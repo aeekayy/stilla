@@ -11,7 +11,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 	"strings"
 
@@ -42,7 +41,14 @@ func NewRouter(dal *DAL) *gin.Engine {
 	router.SetTrustedProxies([]string{})
 
 	// Setup the cookie store for session management
-	router.Use(sessions.Sessions("stilla", sessions.NewCookieStore([]byte("dal.SessionKey"))))
+	// TODO: Make this optional
+	store, err := sessions.NewRedisStore(10, "tcp", dal.Config.Cache.Host, dal.Config.Cache.Host, []byte(dal.SessionKey))
+
+	if err != nil {
+		dal.Logger.Errorf("error setting up cache for DAL: %s", err)
+	} else {
+		router.Use(sessions.Sessions("stilla", store))
+	}
 
 	// Simple group: v1
 	hostGroup := router.Group("/api/v1/host")
@@ -157,7 +163,6 @@ var hostRoutes = Routes{
 		"/:hostId/config/:configId",
 		GetConfigByID,
 	},
-
 }
 
 var healthRoutes = Routes{
@@ -218,20 +223,23 @@ func extractToken(c *gin.Context) (string, bool) {
 }
 
 // AuthRequired is a simple middleware to check the session
-func AuthRequired(c *gin.Context) error {
-	var host string
+func AuthRequired(c *gin.Context) {
+	var host interface{}
 	token, ok := extractToken(c)
 	if ok {
 		// check for the token's validity
+		host, ok, _ = ValidateToken(token)
+		if !ok {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		}
 	} else {
 		session := sessions.Default(c)
 		host = session.Get(hostKey)
 	}
 
-	if host == nil {
+	if host == "" {
 		// Abort the request with the appropriate error code
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-		return errors.New("Unauthorized access")
 	}
 	// Continue down the chain to handler etc
 	c.Next()
