@@ -1,6 +1,6 @@
 module github.com/aeekayy/stilla
 
-go 1.17
+go 1.20
 
 require (
 	github.com/confluentinc/confluent-kafka-go v1.9.2
