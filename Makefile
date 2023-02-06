@@ -1,10 +1,15 @@
 current_dir = $(shell pwd)
 go_dir = /home/ubuntu/go/src
 
+.PHONY: setup-actions
+setup-actions:
+	go mod tidy
+ifdef GITHUB_EVENT_NAME
+	$(MAKE) gen-protobuf
+endif
+
 .PHONY: build
 build:
-	go mod tidy
-	$(MAKE) gen-protobuf
 	go build -o stilla
 
 .PHONY: gen-api
@@ -13,8 +18,8 @@ gen-api:
 
 .PHONY: install-proto-go
 install-proto-go:
-	go get google.golang.org/protobuf/cmd/protoc-gen-go
-	go get google.golang.org/grpc/cmd/protoc-gen-go-grpc
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 
 .PHONY: gen-protobuf
 gen-protobuf:
