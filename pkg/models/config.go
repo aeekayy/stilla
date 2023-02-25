@@ -89,17 +89,23 @@ func GetConfig(in string) (*Config, error) {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("$HOME")
 	viper.AddConfigPath(".")
+	viper.AddConfigPath("/etc/secrets")
 	if in != "" {
 		viper.SetConfigFile(in)
 	}
 
-	// viper environment variables 
-	viper.SetEnvPrefix("stilla")
-	viper.AutomaticEnv()
 	
+
 	err := viper.ReadInConfig()
-	if err != nil {
-		return nil, fmt.Errorf("%v", err)
+
+	switch t := err.(type) {
+	default:
+		return nil, fmt.Errorf("%v, %v", t, err)
+	case viper.ConfigFileNotFoundError:
+		viper.SetConfigType("env")
+		// viper environment variables 
+		viper.SetEnvPrefix("stilla")
+		viper.AutomaticEnv()
 	}
 
 	conf := &Config{}
