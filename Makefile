@@ -1,5 +1,10 @@
 current_dir = $(shell pwd)
 go_dir = /home/ubuntu/go/src
+GO_MINOR := $(wordlist 2,2,$(subst ., ,$(strip $(shell go env GOVERSION))))
+
+ifeq (${GO_MINOR},20)
+    export GOFLAGS := -buildvcs=false
+endif
 
 .PHONY: setup-actions
 setup-actions:

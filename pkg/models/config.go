@@ -92,6 +92,11 @@ func GetConfig(in string) (*Config, error) {
 	if in != "" {
 		viper.SetConfigFile(in)
 	}
+
+	// viper environment variables 
+	viper.SetEnvPrefix("stilla")
+	viper.AutomaticEnv()
+	
 	err := viper.ReadInConfig()
 	if err != nil {
 		return nil, fmt.Errorf("%v", err)
