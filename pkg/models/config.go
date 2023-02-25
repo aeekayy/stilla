@@ -94,18 +94,17 @@ func GetConfig(in string) (*Config, error) {
 		viper.SetConfigFile(in)
 	}
 
-	
-
 	err := viper.ReadInConfig()
 
 	switch t := err.(type) {
-	default:
-		return nil, fmt.Errorf("%v, %v", t, err)
 	case viper.ConfigFileNotFoundError:
 		viper.SetConfigType("env")
 		// viper environment variables 
 		viper.SetEnvPrefix("stilla")
 		viper.AutomaticEnv()
+	case error:
+		return nil, fmt.Errorf("%v, %v", t, err)
+	default:
 	}
 
 	conf := &Config{}
