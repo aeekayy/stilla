@@ -616,6 +616,7 @@ func (d *DAL) GetAuditLogs(ctx *gin.Context, offset string, limit string, req in
 	return results, nil
 }
 
+// ValidateToken ...
 func ValidateToken(token string) (string, bool, error) {
 	var resp string
 

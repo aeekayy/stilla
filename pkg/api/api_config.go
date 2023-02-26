@@ -13,8 +13,8 @@ package api
 import (
 	"net/http"
 
-	"github.com/gin-gonic/gin"
 	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 
 	"github.com/aeekayy/stilla/pkg/api/models"
 )

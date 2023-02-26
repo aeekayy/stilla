@@ -10,6 +10,7 @@
 
 package models
 
+// Healthcheck ...
 type Healthcheck struct {
 	Status *interface{} `json:"status,omitempty"`
 }

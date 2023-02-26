@@ -65,7 +65,7 @@ type Cache struct {
 	Type     string `yaml:"type", json:"type"`
 }
 
-// Cache struct to hold Postgres configuration
+// Database Cache struct to hold Postgres configuration
 type Database struct {
 	Username   string `yaml:"username",json:"username"`
 	Password   string `yaml:"password",json:"password"`
@@ -74,7 +74,7 @@ type Database struct {
 	Parameters string `yaml:"parameters",json:"parameters"`
 }
 
-// Cache struct to hold MongoDB configuration
+// DocumentDatabase Cache struct to hold MongoDB configuration
 type DocumentDatabase struct {
 	Username string `yaml:"username",json:"username"`
 	Password string `yaml:"password",json:"password"`

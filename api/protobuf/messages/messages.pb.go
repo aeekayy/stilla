@@ -22,13 +22,15 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// AuditLog_MessageType ...
 type AuditLog_MessageType int32
 
+// AuditLog_AUDIT ...
 const (
 	AuditLog_AUDIT AuditLog_MessageType = 0
 )
 
-// Enum value maps for AuditLog_MessageType.
+// AuditLog_MessageType_name Enum value maps for AuditLog_MessageType.
 var (
 	AuditLog_MessageType_name = map[int32]string{
 		0: "AUDIT",
@@ -38,33 +40,39 @@ var (
 	}
 )
 
+// Enum ...
 func (x AuditLog_MessageType) Enum() *AuditLog_MessageType {
 	p := new(AuditLog_MessageType)
 	*p = x
 	return p
 }
 
+// String ...
 func (x AuditLog_MessageType) String() string {
 	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
 }
 
+// Descriptor ...
 func (AuditLog_MessageType) Descriptor() protoreflect.EnumDescriptor {
 	return file_messages_proto_enumTypes[0].Descriptor()
 }
 
+// Type ...
 func (AuditLog_MessageType) Type() protoreflect.EnumType {
 	return &file_messages_proto_enumTypes[0]
 }
 
+// Number ...
 func (x AuditLog_MessageType) Number() protoreflect.EnumNumber {
 	return protoreflect.EnumNumber(x)
 }
 
-// Deprecated: Use AuditLog_MessageType.Descriptor instead.
+// EnumDescriptor Deprecated: Use AuditLog_MessageType.Descriptor instead.
 func (AuditLog_MessageType) EnumDescriptor() ([]byte, []int) {
 	return file_messages_proto_rawDescGZIP(), []int{0, 0}
 }
 
+// AuditLog ...
 type AuditLog struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -79,6 +87,7 @@ type AuditLog struct {
 	Sent *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=sent,proto3" json:"sent,omitempty"`
 }
 
+// Reset ...
 func (x *AuditLog) Reset() {
 	*x = AuditLog{}
 	if protoimpl.UnsafeEnabled {
@@ -88,12 +97,15 @@ func (x *AuditLog) Reset() {
 	}
 }
 
+// String ...
 func (x *AuditLog) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
+// ProtoMessage ...
 func (*AuditLog) ProtoMessage() {}
 
+// ProtoReflect ...
 func (x *AuditLog) ProtoReflect() protoreflect.Message {
 	mi := &file_messages_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
@@ -106,11 +118,12 @@ func (x *AuditLog) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use AuditLog.ProtoReflect.Descriptor instead.
+// Descriptor Deprecated: Use AuditLog.ProtoReflect.Descriptor instead.
 func (*AuditLog) Descriptor() ([]byte, []int) {
 	return file_messages_proto_rawDescGZIP(), []int{0}
 }
 
+// GetTopic ...
 func (x *AuditLog) GetTopic() string {
 	if x != nil {
 		return x.Topic
@@ -118,6 +131,7 @@ func (x *AuditLog) GetTopic() string {
 	return ""
 }
 
+// GetFuncName ...
 func (x *AuditLog) GetFuncName() string {
 	if x != nil {
 		return x.FuncName
@@ -125,6 +139,7 @@ func (x *AuditLog) GetFuncName() string {
 	return ""
 }
 
+// GetService ...
 func (x *AuditLog) GetService() string {
 	if x != nil {
 		return x.Service
@@ -132,6 +147,7 @@ func (x *AuditLog) GetService() string {
 	return ""
 }
 
+// GetMessageType ...
 func (x *AuditLog) GetMessageType() AuditLog_MessageType {
 	if x != nil {
 		return x.MessageType
@@ -139,6 +155,7 @@ func (x *AuditLog) GetMessageType() AuditLog_MessageType {
 	return AuditLog_AUDIT
 }
 
+// GetMessage ...
 func (x *AuditLog) GetMessage() *structpb.Struct {
 	if x != nil {
 		return x.Message
@@ -146,6 +163,7 @@ func (x *AuditLog) GetMessage() *structpb.Struct {
 	return nil
 }
 
+// GetSent ...
 func (x *AuditLog) GetSent() *timestamppb.Timestamp {
 	if x != nil {
 		return x.Sent
@@ -153,6 +171,7 @@ func (x *AuditLog) GetSent() *timestamppb.Timestamp {
 	return nil
 }
 
+// File_messages_proto ...
 var File_messages_proto protoreflect.FileDescriptor
 
 var file_messages_proto_rawDesc = []byte{

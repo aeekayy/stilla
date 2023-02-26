@@ -10,6 +10,7 @@
 
 package models
 
+// ConfigIn ...
 type ConfigIn struct {
 
 	// Unique name for the configuration

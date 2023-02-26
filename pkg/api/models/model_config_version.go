@@ -16,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// ConfigVersion ...
 type ConfigVersion struct {
 	ID         primitive.ObjectID `json:"id,omitempty",bson:"_id,omitempty"`
 	Config     map[string]string  `json:"config,omitempty",bson:"config,omitempty"`

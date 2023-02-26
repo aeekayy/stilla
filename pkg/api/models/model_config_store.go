@@ -16,6 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// ConfigStore ...
 type ConfigStore struct {
 	ID primitive.ObjectID `json:"id,omitempty",bson:"_id"`
 	// Unique name for the configuration

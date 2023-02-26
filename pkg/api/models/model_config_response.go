@@ -19,8 +19,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Checksum ...
 type Checksum string
 
+// ConfigResponse ...
 type ConfigResponse struct {
 	ID primitive.ObjectID `json:"_id" bson:"_id"`
 	// Unique name for the configuration
@@ -35,6 +37,7 @@ type ConfigResponse struct {
 	Modified      time.Time `json:"modified" bson:"modified"`
 }
 
+// Config ...
 type Config struct {
 	Checksum  RawChecksum            `json:"checksum" bson:"checksum"`
 	Config    map[string]interface{} `json:"config,omitempty" bson:"config"`
@@ -42,10 +45,12 @@ type Config struct {
 	CreatedBy string                 `json:"created_by,omitempty" bson:"created_by"`
 }
 
+// RawChecksum ...
 type RawChecksum struct {
 	Data Checksum `json:"Data" bson:"Data"`
 }
 
+// UnmarshalJSON ...
 func (c *Checksum) UnmarshalJSON(b []byte) error {
 	var r RawChecksum
 	if err := json.Unmarshal(b, &r); err != nil {
@@ -56,6 +61,7 @@ func (c *Checksum) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// MarshalJSON ...
 func (c Checksum) MarshalJSON() ([]byte, error) {
 	var r RawChecksum
 	r.Data = c
@@ -63,12 +69,14 @@ func (c Checksum) MarshalJSON() ([]byte, error) {
 	return json.Marshal(r)
 }
 
+// GetBSON ...
 func (c Checksum) GetBSON() (interface{}, error) {
 	return RawChecksum{
 		Data: c,
 	}, nil
 }
 
+// SetBSON ...
 func (c *Checksum) SetBSON(raw bson.Raw) error {
 	err := raw.Validate()
 	if err != nil {
@@ -87,7 +95,7 @@ func (c *Checksum) SetBSON(raw bson.Raw) error {
 	return nil
 }
 
-// {"data":{"_id":"638b0a89e7693d00937122ef","config":{"checksum":{"Subtype":0,"Data":"foaNr/amVrF/tnClaVX7bHcCCX8nUY9fBzW/2pmnopo="},"config":{"url":"https://backstage.aeekay.co"},"config_name":"backstage","created":"2022-12-03T08:36:24.972Z","created_by":"aeekayy"},"config_name":"backstage","config_version":"638b0a88e7693d00937122ee","created":"2022-12-03T08:36:24.972Z","created_by":"aeekayy","modified":"2022-12-03T08:36:24.972Z","parents":null}}
+// Ingest {"data":{"_id":"638b0a89e7693d00937122ef","config":{"checksum":{"Subtype":0,"Data":"foaNr/amVrF/tnClaVX7bHcCCX8nUY9fBzW/2pmnopo="},"config":{"url":"https://backstage.aeekay.co"},"config_name":"backstage","created":"2022-12-03T08:36:24.972Z","created_by":"aeekayy"},"config_name":"backstage","config_version":"638b0a88e7693d00937122ee","created":"2022-12-03T08:36:24.972Z","created_by":"aeekayy","modified":"2022-12-03T08:36:24.972Z","parents":null}}
 func (cr *ConfigResponse) Ingest(b *bson.M) error {
 	m, err := bson.Marshal(b)
 

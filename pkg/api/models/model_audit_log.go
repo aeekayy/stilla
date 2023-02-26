@@ -14,6 +14,7 @@ import (
 	"time"
 )
 
+// AuditLog ...
 type AuditLog struct {
 	ID       string                 `json:"id,omitempty"`
 	Service  string                 `json:"service,omitempty"`

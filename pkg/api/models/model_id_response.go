@@ -10,6 +10,7 @@
 
 package models
 
+// IdResponse ...
 type IdResponse struct {
 	Id *interface{} `json:"id,omitempty"`
 }

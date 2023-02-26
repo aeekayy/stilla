@@ -10,6 +10,7 @@
 
 package models
 
+// UpdateConfigIn ...
 type UpdateConfigIn struct {
 	// Unique name for the configuration
 	ConfigName string                 `json:"config_name"`

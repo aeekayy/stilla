@@ -10,6 +10,7 @@
 
 package models
 
+// Error ...
 type Error struct {
 	Code *interface{} `json:"code"`
 

@@ -10,6 +10,7 @@
 
 package models
 
+// HostRegisterIn ...
 type HostRegisterIn struct {
 	Name string   `form:"name" json:"name" yaml:"name"`
 	Tags []string `form:"tags" json:"tags" yaml:"tags"`
