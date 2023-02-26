@@ -230,6 +230,7 @@ func AuthRequired(c *gin.Context) {
 	if ok {
 		// check for the token's validity
 		host, ok, _ = ValidateToken(token)
+		c.Set("x-host-id", token)
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		}
@@ -244,7 +245,7 @@ func AuthRequired(c *gin.Context) {
 	}
 	// set the context
 	c.Set("x-host", host)
-	
+
 	// Continue down the chain to handler etc
 	c.Next()
 }

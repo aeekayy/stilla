@@ -157,7 +157,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	requestDetails["request.remoteaddr"] = utils.SanitizeMessageValue(httpReq.RemoteAddr)
 	requestDetails["config"] = utils.SanitizeMessageValue(configIn)
 	// get the host
-	hostID := ctx.GetString("x-host")
+	hostID := ctx.GetString("x-host-id")
 
 	// select database and collection ith Client.Database method
 	// and Database.Collection method
