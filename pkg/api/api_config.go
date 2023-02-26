@@ -13,7 +13,7 @@ package api
 import (
 	"net/http"
 
-	"github.com/getsentry/sentry-go"
+	// "github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 
 	"github.com/aeekayy/stilla/pkg/api/models"
@@ -61,9 +61,9 @@ func GetConfigByID(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		span := sentry.StartSpan(c, "config.get")
-		config, err := dal.GetConfig(span.Context(), configID, hostID, c.Request)
-		span.Finish()
+		// span := sentry.StartSpan(c, "config.get")
+		config, err := dal.GetConfig(c, configID, hostID, c.Request)
+		// span.Finish()
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve config: %v", err)
