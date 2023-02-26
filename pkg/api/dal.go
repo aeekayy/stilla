@@ -14,7 +14,7 @@ import (
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-contrib/cache/persistence"
-	pgx "github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -43,7 +43,7 @@ type DAL struct {
 	Collection    string                  `json:"collection,omitempty"`
 	Cache         *persistence.RedisStore `json:"cache"`
 	Config        *svcmodels.Config       `json:"config"`
-	Database      *pgx.Conn               `json:"database"`
+	Database      *pgxpool.Pool           `json:"database"`
 	Context       *context.Context        `json:"context"`
 	DocumentStore *mongo.Client           `json:"document_store"`
 	Logger        *zap.SugaredLogger      `json:"logger"`
@@ -65,7 +65,7 @@ type HostCache struct {
 }
 
 // NewDAL returns a new DAL
-func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, config *svcmodels.Config, dbConn *pgx.Conn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
+func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, config *svcmodels.Config, dbConn *pgxpool.Pool, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
 	return &DAL{
 		Context:       ctx,
 		Config:        config,
@@ -166,11 +166,11 @@ func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req in
 	var result bson.M
 
 	sanitizedConfigName := utils.SanitizeMongoInput(configIn.ConfigName)
+
+	// the $where function is not support on the Atlas free tier
+	// https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/?_ga=2.189348331.1715576176.1677375251-1973124898.1674435602
 	filter := bson.D{
-		{Key: "$where", Value: bson.D{
-			primitive.E{Key: "config_name", Value: sanitizedConfigName},
-		},
-		},
+		{Key: "config_name", Value: sanitizedConfigName},
 	}
 	// see if there's an existing record
 	err := config_col.FindOne(
@@ -434,10 +434,7 @@ func (d *DAL) UpdateConfigByID(ctx context.Context, configID string, updateConfi
 
 	sanitizedConfigID := utils.SanitizeMongoInput(configID)
 	filter := bson.D{
-		{Key: "$where", Value: bson.D{
-			primitive.E{Key: "_id", Value: sanitizedConfigID},
-		},
-		},
+		{Key: "_id", Value: sanitizedConfigID},
 	}
 	// see if there's an existing record
 	err := config_col.FindOne(

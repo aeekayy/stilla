@@ -99,7 +99,7 @@ func GetConfig(in string) (*Config, error) {
 	switch t := err.(type) {
 	case viper.ConfigFileNotFoundError:
 		viper.SetConfigType("env")
-		// viper environment variables 
+		// viper environment variables
 		viper.SetEnvPrefix("stilla")
 		viper.AutomaticEnv()
 	case error:

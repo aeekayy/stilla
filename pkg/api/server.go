@@ -103,7 +103,7 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 	router := NewRouter(dal)
 
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:  []string{"https://stilla.aeekay.co:8443"},
+		AllowOrigins:  []string{"https://stilla.aeekay.co"},
 		AllowMethods:  []string{"PUT", "POST", "GET", "PATCH", "HEAD", "OPTIONS"},
 		AllowHeaders:  []string{"Origin", "Referer", "Content-Type", "Accept", "Session", "Access-Control-Allow-Origin", "scheme", "path", "method", "authority", "user-agent", "sec-fetch-site", "sec-fetch-dest", "sec-fetch-mode", "sec-ch-ua-platform", "sec-ch-ua-mobile", "sec-ch-ua", "dnt", "content-length", "accept-encoding", "accept-language", "cache-control", "pragma"},
 		ExposeHeaders: []string{"Origin", "Referer", "Content-Type", "Accept", "Session", "Access-Control-Allow-Origin", "scheme", "path", "method", "authority", "user-agent", "sec-fetch-site", "sec-fetch-dest", "sec-fetch-mode", "sec-ch-ua-platform", "sec-ch-ua-mobile", "sec-ch-ua", "dnt", "content-length", "accept-encoding", "accept-language", "cache-control", "pragma"},

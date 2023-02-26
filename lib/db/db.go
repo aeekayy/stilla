@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	pgx "github.com/jackc/pgx/v4"
+	pgxpool "github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
-	dbConn    *pgx.Conn
+	dbPool    *pgxpool.Pool
 	dbCtx     *context.Context
 	mongoConn *mongo.Client
 )
@@ -33,18 +33,24 @@ type ApiKey struct {
 type APIKey ApiKey
 
 // Connect connect to a Postgres compatible database.
-func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams string) (*pgx.Conn, error) {
+func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams string) (*pgxpool.Pool, error) {
 	// https://github.com/jackc/pgx/blob/master/batch_test.go#L32
 
-	dsn := fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", dbUser, dbPass, dbHost, dbName, dbParams)
-	conn, err := pgx.Connect(*ctx, dsn)
+	connString := fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", dbUser, dbPass, dbHost, dbName, dbParams)
+	dbConfig, err := pgxpool.ParseConfig(connString)
+
 	if err != nil {
-		return nil, errors.New(fmt.Sprint("failed to connect database", err))
+		return nil, errors.New(fmt.Sprintf("failed to parse database config: %s", err))
+	}
+
+	pool, err := pgxpool.NewWithConfig(*ctx, dbConfig)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("failed to connect database: %s", err))
 	}
 
 	dbCtx = ctx
-	dbConn = conn
-	return conn, nil
+	dbPool = pool
+	return pool, nil
 }
 
 // MongoConnect establishes a connection to a MongoDB cluster
@@ -53,7 +59,7 @@ func MongoConnect(ctx *context.Context, dbUser, dbPass, dbHost, dbTimeout string
 
 	// ctx will be used to set deadline for process, here
 	// deadline will of 30 seconds.
-	mongoctx, cancel := context.WithTimeout(*ctx, 30*time.Second)
+	mongoctx, cancel := context.WithTimeout(*ctx, 10*time.Second)
 
 	uri := fmt.Sprintf("mongodb+srv://%s:%s@%s/?retryWrites=true&w=majority", dbUser, dbPass, dbHost)
 
@@ -70,7 +76,7 @@ func GetAPIKey(keyID string) (APIKey, error) {
 	var apiID, apiName, apiRoleID string
 	var apiCreated, apiUpdated time.Time
 
-	err := dbConn.QueryRow(*dbCtx, "SELECT id, name, role, created, updated FROM api_keys WHERE id=$1;", keyID).Scan(&apiID, &apiName, &apiRoleID, &apiCreated, &apiUpdated)
+	err := dbPool.QueryRow(*dbCtx, "SELECT id, name, role, created, updated FROM api_keys WHERE id=$1;", keyID).Scan(&apiID, &apiName, &apiRoleID, &apiCreated, &apiUpdated)
 
 	apiKey.ID = uuid.MustParse(apiID)
 	apiKey.Name = apiName
@@ -85,7 +91,7 @@ func GetAPIKey(keyID string) (APIKey, error) {
 func GenerateAPIKey(name string, tags []string) (string, error) {
 	var apiKeyID string
 
-	err := dbConn.QueryRow(*dbCtx, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&apiKeyID)
+	err := dbPool.QueryRow(*dbCtx, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&apiKeyID)
 
 	return apiKeyID, err
 }
@@ -94,7 +100,7 @@ func GenerateAPIKey(name string, tags []string) (string, error) {
 func ValidateAPIKey(id string) (string, error) {
 	var hostname string
 
-	err := dbConn.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostname)
+	err := dbPool.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostname)
 
 	return hostname, err
 }
