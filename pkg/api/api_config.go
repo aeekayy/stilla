@@ -13,8 +13,10 @@ package api
 import (
 	"net/http"
 
-	"github.com/aeekayy/stilla/pkg/api/models"
 	"github.com/gin-gonic/gin"
+	"github.com/getsentry/sentry-go"
+
+	"github.com/aeekayy/stilla/pkg/api/models"
 )
 
 // AddConfig - Create a new configuration and configuration value
@@ -28,7 +30,9 @@ func AddConfig(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
+		span := sentry.StartSpan(c, "config.insert")
 		config_id, err := dal.InsertConfig(c, req, c.Request)
+		span.Finish()
 
 		if err != nil {
 			dal.Logger.Errorf("unable to insert config: %v", err)
@@ -57,7 +61,9 @@ func GetConfigByID(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
+		span := sentry.StartSpan(c, "config.get")
 		config, err := dal.GetConfig(c, configID, hostID, c.Request)
+		span.Finish()
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve config: %v", err)
@@ -80,7 +86,9 @@ func GetConfigs(dal *DAL) gin.HandlerFunc {
 		offset := c.Query("offset")
 		limit := c.Query("limit")
 
+		span := sentry.StartSpan(c, "config.get_all")
 		configs, err := dal.GetConfigs(c, offset, limit, c.Request)
+		span.Finish()
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve configurations: %v", err)
@@ -114,7 +122,9 @@ func UpdateConfigByID(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
+		span := sentry.StartSpan(c, "config.update")
 		config, err := dal.UpdateConfigByID(c, configID, req, c.Request)
+		span.Finish()
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve config: %v", err)
