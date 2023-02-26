@@ -19,6 +19,13 @@ type Config struct {
 	Kafka       map[string]interface{} `yaml:"kafka" json:"kafka"`
 	Audit       bool                   `yaml:"audit" json:"audit"`
 	SessionKey  string                 `yaml:"session_key" json:"session_key"`
+	Sentry      SentryConfig           `yaml:"sentry" json:"sentry"`
+}
+
+// SentryConfig configuration for Sentry
+type SentryConfig struct {
+	Enabled bool   `yaml:"enabled" json:"enabled"`
+	DSN     string `yaml:"dsn" json:"dsn"`
 }
 
 // GetKafkaConfig retrieves a Kafka.ConfigMap compatible struct from

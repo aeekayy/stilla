@@ -7,7 +7,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
+	"github.com/getsentry/sentry-go"
 	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
 
@@ -50,6 +52,54 @@ func main() {
 	config, err := models.GetConfig(configFile)
 	if err != nil {
 		sugar.Errorf("There's an error retrieving the configuration: %s", err)
+	}
+
+	// enable tracing if it's enable
+	if config.Sentry.Enabled {
+		sugar.Info("Starting Sentry")
+		err := sentry.Init(sentry.ClientOptions{
+			// Either set your DSN here or set the SENTRY_DSN environment variable.
+			Dsn: config.Sentry.DSN,
+			BeforeSendTransaction: func(event *sentry.Event, hint *sentry.EventHint) *sentry.Event {
+				// Here you can inspect/modify transaction events before they are sent.
+				// Returning nil drops the event.
+				if strings.Contains(event.Message, "test-transaction") {
+					// Drop the transaction
+					return nil
+				}
+				return event
+			},
+			// Enable tracing
+			EnableTracing: true,
+			// Specify either a TracesSampleRate...
+			TracesSampleRate: 1.0,
+			// ... or a TracesSampler
+			TracesSampler: sentry.TracesSampler(func(ctx sentry.SamplingContext) float64 {
+				// As an example, this custom sampler does not send some
+				// transactions to Sentry based on their name.
+				hub := sentry.GetHubFromContext(ctx.Span.Context())
+				name := hub.Scope().Transaction()
+				if name == "GET /favicon.ico" {
+					return 0.0
+				}
+				if strings.HasPrefix(name, "HEAD") {
+					return 0.0
+				}
+				// As an example, sample some transactions with a uniform rate.
+				if strings.HasPrefix(name, "POST") {
+					return 0.2
+				}
+				// Sample all other transactions for testing. On
+				// production, use TracesSampleRate with a rate adequate
+				// for your traffic, or use the SamplingContext to
+				// customize sampling per-transaction.
+				return 1.0
+			}),
+		})
+
+		if err != nil {
+			sugar.Errorf("Unable to start up Sentry: %s", err)
+		}
 	}
 
 	sugar.Infof("Retrieving variables for the environment %s", config.Environment)
