@@ -100,6 +100,10 @@ func main() {
 		if err != nil {
 			sugar.Errorf("Unable to start up Sentry: %s", err)
 		}
+
+		// Flush buffered events before the program terminates.
+		// Set the timeout to the maximum duration the program can afford to wait.
+		defer sentry.Flush(2 * time.Second)
 	}
 
 	sugar.Infof("Retrieving variables for the environment %s", config.Environment)
