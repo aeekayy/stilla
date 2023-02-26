@@ -55,13 +55,6 @@ func NewRouter(dal *DAL) *gin.Engine {
 		router.Use(sentrygin.New(sentrygin.Options{
 			Repanic: true,
 		}))
-
-		router.Use(func(ctx *gin.Context) {
-			if hub := sentrygin.GetHubFromContext(ctx); hub != nil {
-				hub.Scope().SetTag("app", "stilla")
-			}
-			ctx.Next()
-		})
 	}
 
 	// Simple group: v1
