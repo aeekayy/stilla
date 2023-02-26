@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/getsentry/sentry-go"
 	"go.uber.org/ratelimit"
