@@ -281,31 +281,35 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 		return nil, fmt.Errorf("unable to retrieve config: %v", err)
 	}
 
-	objID, err := primitive.ObjectIDFromHex(configID)
+	var result bson.M
+	var metadataKey string
+	var metadataFilter bson.M
+	var objID primitive.ObjectID
+	
+	if primitive.IsValidObjectID(configID) {
+		metadataKey = "_id"
+		objID, err = primitive.ObjectIDFromHex(configID)
 
-	if err != nil {
-		return nil, fmt.Errorf("error setting objectid: %s", err)
+		if err != nil {
+			return nil, fmt.Errorf("error setting objectid: %s", err)
+		}
+
+		metadataFilter = bson.M{"$eq": objID}
+	} else {
+		metadataKey = "config_name"
+		metadataFilter = bson.M{"$eq": configID}
 	}
 
-	var result bson.M
 	// see if there's an existing record
 	var searchFilter bson.D
 	if hostID != "" {
 		searchFilter = bson.D{
-			{ "$or", []interface{}{
-				bson.M{"_id": objID}, 
-				bson.M{"config_name": objID},
-				},
-			}, 
+			{ metadataKey, metadataFilter }, 
 			{"host", bson.M{"$eq": hostID}},
 		}
 	} else {
 		searchFilter = bson.D{
-			{ "$or", []interface{}{
-				bson.M{"_id": objID}, 
-				bson.M{"config_name": objID},
-				},
-			},
+			{ metadataKey, metadataFilter },
 		}
 	}
 	err = config_col.FindOne(
