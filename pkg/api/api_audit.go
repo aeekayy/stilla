@@ -11,7 +11,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,7 +22,7 @@ func GetRecords(dal *DAL) gin.HandlerFunc {
 		offset := c.Query("offset")
 		limit := c.Query("limit")
 
-		logs, err := dal.GetAuditLogs(context.TODO(), offset, limit, c.Request)
+		logs, err := dal.GetAuditLogs(c, offset, limit, c.Request)
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve audit logs: %v", err)

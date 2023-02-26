@@ -11,7 +11,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/aeekayy/stilla/pkg/api/models"
@@ -29,7 +28,7 @@ func AddConfig(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		config_id, err := dal.InsertConfig(context.TODO(), req, c.Request)
+		config_id, err := dal.InsertConfig(c, req, c.Request)
 
 		if err != nil {
 			dal.Logger.Errorf("unable to insert config: %v", err)
@@ -58,7 +57,7 @@ func GetConfigByID(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		config, err := dal.GetConfig(context.TODO(), configID, hostID, c.Request)
+		config, err := dal.GetConfig(c, configID, hostID, c.Request)
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve config: %v", err)
@@ -81,7 +80,7 @@ func GetConfigs(dal *DAL) gin.HandlerFunc {
 		offset := c.Query("offset")
 		limit := c.Query("limit")
 
-		configs, err := dal.GetConfigs(context.TODO(), offset, limit, c.Request)
+		configs, err := dal.GetConfigs(c, offset, limit, c.Request)
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve configurations: %v", err)
@@ -115,7 +114,7 @@ func UpdateConfigByID(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		config, err := dal.UpdateConfigByID(context.TODO(), configID, req, c.Request)
+		config, err := dal.UpdateConfigByID(c, configID, req, c.Request)
 
 		if err != nil {
 			dal.Logger.Errorf("unable to retrieve config: %v", err)

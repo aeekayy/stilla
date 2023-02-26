@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/bson"
@@ -88,7 +89,7 @@ func (a *AuditEvent) ToByteSlice() ([]byte, error) {
 }
 
 // RegisterHost registers a host and provides the requestor an API key
-func (d *DAL) RegisterHost(ctx context.Context, hostRegisterIn models.HostRegisterIn, req interface{}) (string, error) {
+func (d *DAL) RegisterHost(ctx *gin.Context, hostRegisterIn models.HostRegisterIn, req interface{}) (string, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -114,7 +115,7 @@ func (d *DAL) RegisterHost(ctx context.Context, hostRegisterIn models.HostRegist
 }
 
 // LoginHost uses the API Key of a host and validates it. Creates a new session if the key is valid
-func (d *DAL) LoginHost(ctx context.Context, hostLoginIn models.HostLoginIn, req interface{}) (string, error) {
+func (d *DAL) LoginHost(ctx *gin.Context, hostLoginIn models.HostLoginIn, req interface{}) (string, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -143,7 +144,7 @@ func (d *DAL) LoginHost(ctx context.Context, hostLoginIn models.HostLoginIn, req
 // InsertConfig insert a configuration object into the document store. This
 // creates a new ConfigVersion object. The ObjectID of the ConfigVersion is then
 // used to update the Config object reference for ConfigVersion
-func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req interface{}) (interface{}, error) {
+func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (interface{}, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -155,6 +156,8 @@ func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req in
 	requestDetails["request.uri"] = utils.SanitizeMessageValue(httpReq.RequestURI)
 	requestDetails["request.remoteaddr"] = utils.SanitizeMessageValue(httpReq.RemoteAddr)
 	requestDetails["config"] = utils.SanitizeMessageValue(configIn)
+	// get the host
+	hostID := ctx.GetString("x-host")
 
 	// select database and collection ith Client.Database method
 	// and Database.Collection method
@@ -212,6 +215,7 @@ func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req in
 		{"config_name", configIn.ConfigName},
 		{"created_by", configIn.Owner},
 		{"config_version", config_version.InsertedID},
+		{"host", hostID},
 		{"parents", configIn.Parents},
 		{"created", created},
 		{"modified", updated},
@@ -230,7 +234,7 @@ func (d *DAL) InsertConfig(ctx context.Context, configIn models.ConfigIn, req in
 }
 
 // GetConfig returns a Config with the latest version of the ConfigVersion
-func (d *DAL) GetConfig(ctx context.Context, configID string, hostID string, req interface{}) (bson.M, error) {
+func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req interface{}) (bson.M, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -287,9 +291,22 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, hostID string, req
 	// see if there's an existing record
 	var searchFilter bson.D
 	if hostID != "" {
-		searchFilter = bson.D{{"_id", bson.M{"$eq": objID}}, {"host", bson.M{"$eq": hostID}}}
+		searchFilter = bson.D{
+			{ "$or", []interface{}{
+				bson.M{"_id": objID}, 
+				bson.M{"config_name": objID},
+				},
+			}, 
+			{"host", bson.M{"$eq": hostID}},
+		}
 	} else {
-		searchFilter = bson.D{{"_id", bson.M{"$eq": objID}}}
+		searchFilter = bson.D{
+			{ "$or", []interface{}{
+				bson.M{"_id": objID}, 
+				bson.M{"config_name": objID},
+				},
+			},
+		}
 	}
 	err = config_col.FindOne(
 		ctx,
@@ -346,7 +363,7 @@ func (d *DAL) GetConfig(ctx context.Context, configID string, hostID string, req
 }
 
 // GetConfigs returns a paginated slice of Configs from the document store
-func (d *DAL) GetConfigs(ctx context.Context, offset string, limit string, req interface{}) ([]models.ConfigStore, error) {
+func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req interface{}) ([]models.ConfigStore, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -411,7 +428,7 @@ func (d *DAL) GetConfigs(ctx context.Context, offset string, limit string, req i
 }
 
 // UpdateConfigByID Updates a configuration by the ID
-func (d *DAL) UpdateConfigByID(ctx context.Context, configID string, updateConfigIn models.UpdateConfigIn, req interface{}) (interface{}, error) {
+func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn models.UpdateConfigIn, req interface{}) (interface{}, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -532,7 +549,7 @@ func (d *DAL) EmitMessage(messageType, funcName string, body map[string]interfac
 }
 
 // GetAuditLogs returns a pagination list of audit logs
-func (d *DAL) GetAuditLogs(ctx context.Context, offset string, limit string, req interface{}) ([]pb.AuditLog, error) {
+func (d *DAL) GetAuditLogs(ctx *gin.Context, offset string, limit string, req interface{}) ([]pb.AuditLog, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)

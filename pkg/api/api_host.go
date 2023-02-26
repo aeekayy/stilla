@@ -11,7 +11,6 @@
 package api
 
 import (
-	"context"
 	"net/http"
 
 	"github.com/aeekayy/stilla/pkg/api/models"
@@ -30,7 +29,7 @@ func HostRegister(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		apiKey, err := dal.RegisterHost(context.TODO(), req, c.Request)
+		apiKey, err := dal.RegisterHost(c, req, c.Request)
 
 		if err != nil {
 			dal.Logger.Errorf("unable to register host: %v", err)
@@ -57,7 +56,7 @@ func HostLogin(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		hostID, err := dal.LoginHost(context.TODO(), req, c.Request)
+		hostID, err := dal.LoginHost(c, req, c.Request)
 
 		session := sessions.Default(c)
 

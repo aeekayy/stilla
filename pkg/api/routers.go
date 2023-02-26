@@ -242,6 +242,9 @@ func AuthRequired(c *gin.Context) {
 		// Abort the request with the appropriate error code
 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 	}
+	// set the context
+	c.Set("x-host", host)
+	
 	// Continue down the chain to handler etc
 	c.Next()
 }
