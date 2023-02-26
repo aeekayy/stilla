@@ -16,7 +16,7 @@ type ConfigIn struct {
 	ConfigName string                 `json:"config_name"`
 	Owner      string                 `json:"owner"`
 	Config     map[string]interface{} `json:"config,omitempty"`
-	Host		string					`json:"host,omitempty"`
+	Host       string                 `json:"host,omitempty"`
 	Parents    []string               `json:"parents,omitempty"`
 	Tags       []string               `form:"tags" json:"tags" yaml:"tags"`
 }

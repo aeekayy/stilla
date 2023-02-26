@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
-	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/cache/persistence"
+	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -285,7 +285,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	var metadataKey string
 	var metadataFilter bson.M
 	var objID primitive.ObjectID
-	
+
 	if primitive.IsValidObjectID(configID) {
 		metadataKey = "_id"
 		objID, err = primitive.ObjectIDFromHex(configID)
@@ -304,12 +304,12 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	var searchFilter bson.D
 	if hostID != "" {
 		searchFilter = bson.D{
-			{ metadataKey, metadataFilter }, 
+			{metadataKey, metadataFilter},
 			{"host", bson.M{"$eq": hostID}},
 		}
 	} else {
 		searchFilter = bson.D{
-			{ metadataKey, metadataFilter },
+			{metadataKey, metadataFilter},
 		}
 	}
 	err = config_col.FindOne(

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"strings"
 
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -48,6 +49,12 @@ func NewRouter(dal *DAL) *gin.Engine {
 		dal.Logger.Errorf("error setting up cache for DAL: %s", err)
 	} else {
 		router.Use(sessions.Sessions("stilla", store))
+	}
+
+	if dal.Config.Sentry.Enabled {
+		router.Use(sentrygin.New(sentrygin.Options{
+			Repanic: true,
+		}))
 	}
 
 	// Simple group: v1
