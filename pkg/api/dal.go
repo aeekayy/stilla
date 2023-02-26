@@ -291,7 +291,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 		objID, err = primitive.ObjectIDFromHex(configID)
 
 		if err != nil {
-			return nil, fmt.Errorf("error setting objectid: %s", err)
+			return nil, fmt.Errorf("error setting objectid: %s, %s", configID, err)
 		}
 
 		metadataFilter = bson.M{"$eq": objID}
