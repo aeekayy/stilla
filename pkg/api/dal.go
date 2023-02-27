@@ -513,42 +513,44 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 
 // EmitMessage emits a message for the service. Currently only manages AuditEvents
 func (d *DAL) EmitMessage(messageType, funcName string, body map[string]interface{}) {
-	if d.Producer != nil {
-		gob.Register(pb.AuditLog{})
-		// convert body from map[string]interface{} to struct
-		sbody, err := utils.MapToProtobufStruct(body)
-		if err != nil {
-			d.Logger.Errorf("error encoding message: %s", err)
-			return
-		}
-		event := &pb.AuditLog{
-			Message:     sbody,
-			Topic:       messageType,
-			MessageType: pb.AuditLog_AUDIT,
-			FuncName:    funcName,
-			Service:     serviceName,
-		}
+	go func() {
+		if d.Producer != nil {
+			gob.Register(pb.AuditLog{})
+			// convert body from map[string]interface{} to struct
+			sbody, err := utils.MapToProtobufStruct(body)
+			if err != nil {
+				d.Logger.Errorf("error encoding message: %s", err)
+				return
+			}
+			event := &pb.AuditLog{
+				Message:     sbody,
+				Topic:       messageType,
+				MessageType: pb.AuditLog_AUDIT,
+				FuncName:    funcName,
+				Service:     serviceName,
+			}
 
-		// Write the new address book back to disk.
-		out, err := proto.Marshal(event)
+			// Write the new address book back to disk.
+			out, err := proto.Marshal(event)
 
-		if err != nil {
-			d.Logger.Errorf("error encoding message: %s", err)
-			return
+			if err != nil {
+				d.Logger.Errorf("error encoding message: %s", err)
+				return
+			}
+
+			//eventValue, _ := event.ToByteSlice()
+			deliveryChan := make(chan kafka.Event, 10000)
+			err = d.Producer.Produce(&kafka.Message{
+				TopicPartition: kafka.TopicPartition{Topic: &messageType, Partition: kafka.PartitionAny},
+				Value:          out},
+				deliveryChan,
+			)
+
+			if err != nil {
+				d.Logger.Errorf("unable to emit event: %s", err)
+			}
 		}
-
-		//eventValue, _ := event.ToByteSlice()
-		deliveryChan := make(chan kafka.Event, 10000)
-		err = d.Producer.Produce(&kafka.Message{
-			TopicPartition: kafka.TopicPartition{Topic: &messageType, Partition: kafka.PartitionAny},
-			Value:          out},
-			deliveryChan,
-		)
-
-		if err != nil {
-			d.Logger.Errorf("unable to emit event: %s", err)
-		}
-	}
+	}()
 }
 
 // GetAuditLogs returns a pagination list of audit logs
