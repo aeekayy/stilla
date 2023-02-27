@@ -3,7 +3,6 @@ package db
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -30,7 +29,7 @@ type APIKey struct {
 
 // APIKey API key for the application. This needs to move
 // to another package. This does not belong in the db package.
-type APIKey APIKey
+// type APIKey APIKey
 
 // Connect connect to a Postgres compatible database.
 func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams string) (*pgxpool.Pool, error) {

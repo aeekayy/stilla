@@ -31,10 +31,10 @@ import (
 )
 
 const (
-	configDB                 = "config_db"
-	configCollection         = "config"
+	configDB                = "config_db"
+	configCollection        = "config"
 	configVersionCollection = "config_version"
-	serviceName              = "stilla"
+	serviceName             = "stilla"
 )
 
 // DAL Data Access Layer struct for maintaining and managing
@@ -210,7 +210,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 
 	d.Logger.Infof("Inserted configVersion %v", configVersion.InsertedID)
 
-	configIn := bson.D{
+	configAdd := bson.D{
 		{"config_name", configIn.ConfigName},
 		{"created_by", configIn.Owner},
 		{"config_version", configVersion.InsertedID},
@@ -222,7 +222,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 
 	// InsertOne accept two argument of type Context
 	// and of empty interface
-	configResp, err := configCol.InsertOne(ctx, configIn)
+	configResp, err := configCol.InsertOne(ctx, configAdd)
 	if err != nil {
 		d.Logger.Errorf("unable to insert config: %v", err)
 		return nil, fmt.Errorf("unable to insert config: %s", err)
