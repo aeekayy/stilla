@@ -19,8 +19,8 @@ var (
 	mongoConn *mongo.Client
 )
 
-// ApiKey ApiKey for authentication
-type ApiKey struct {
+// APIKey ApiKey for authentication
+type APIKey struct {
 	ID      uuid.UUID `yaml:"id",json:"id"`
 	Name    string    `yaml:"name",json:"name"`
 	Role    uuid.UUID `yaml:"role",json:"role"`
@@ -30,7 +30,7 @@ type ApiKey struct {
 
 // APIKey API key for the application. This needs to move
 // to another package. This does not belong in the db package.
-type APIKey ApiKey
+type APIKey APIKey
 
 // Connect connect to a Postgres compatible database.
 func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams string) (*pgxpool.Pool, error) {
@@ -40,12 +40,12 @@ func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams stri
 	dbConfig, err := pgxpool.ParseConfig(connString)
 
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("failed to parse database config: %s", err))
+		return nil, fmt.Errorf("failed to parse database config: %s", err)
 	}
 
 	pool, err := pgxpool.NewWithConfig(*ctx, dbConfig)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("failed to connect database: %s", err))
+		return nil, fmt.Errorf("failed to connect database: %s", err)
 	}
 
 	dbCtx = ctx

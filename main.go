@@ -39,7 +39,7 @@ func main() {
 	// start the logger
 	logger, err := zap.NewProduction()
 	if err != nil {
-		fmt.Errorf("Error starting the logger. Exiting.")
+		fmt.Errorf("error starting the logger, exiting")
 		os.Exit(1)
 	}
 	defer logger.Sync()

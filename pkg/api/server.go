@@ -138,9 +138,9 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 func (h *HTTPServer) run() error {
 	if h.Secure {
 		return autotls.RunWithContext(h.Context, h.Engine, h.DomainName)
-	} else {
-		return h.Engine.Run()
 	}
+	
+	return h.Engine.Run()
 }
 
 // Run runs the web server

@@ -31,11 +31,10 @@ import (
 )
 
 const (
-	config_db                 = "configdb"
-	config_collection         = "config"
-	config_version_collection = "config_version"
-	AUDIT_EVENT               = "audit"
-	SERVICE_NAME              = "stilla"
+	configDB                 = "config_db"
+	configCollection         = "config"
+	configVersionCollection = "config_version"
+	serviceName              = "stilla"
 )
 
 // DAL Data Access Layer struct for maintaining and managing
@@ -163,8 +162,8 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	// and Database.Collection method
 	d.EmitMessage("config.audit", "InsertConfig", requestDetails)
 
-	config_col := d.DocumentStore.Database(config_db).Collection(config_collection)
-	config_version_col := d.DocumentStore.Database(config_db).Collection(config_version_collection)
+	configCol := d.DocumentStore.Database(configDB).Collection(configCollection)
+	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
 
 	var result bson.M
 
@@ -176,7 +175,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 		{Key: "config_name", Value: sanitizedConfigName},
 	}
 	// see if there's an existing record
-	err := config_col.FindOne(
+	err := configCol.FindOne(
 		ctx,
 		filter,
 	).Decode(&result)
@@ -195,26 +194,26 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	updated := time.Now()
 	checksum := sha256.Sum256([]byte(fmt.Sprintf("%s:%s+%s:%s", configIn.ConfigName, configIn.Owner, created.String(), updated.String())))
 
-	config_version_in := bson.D{
+	configVersionIn := bson.D{
 		{"config", configIn.Config},
 		{"config_name", configIn.ConfigName},
 		{"checksum", checksum},
 		{"created_by", configIn.Owner},
 		{"created", created},
 	}
-	// create a new config_version
-	config_version, err := config_version_col.InsertOne(ctx, config_version_in)
+	// create a new configVersion
+	configVersion, err := configVersionCol.InsertOne(ctx, configVersionIn)
 	if err != nil {
-		d.Logger.Errorf("unable to insert config_version: %v", err)
-		return nil, fmt.Errorf("unable to ingest config_version object: %s", err)
+		d.Logger.Errorf("unable to insert configVersion: %v", err)
+		return nil, fmt.Errorf("unable to ingest configVersion object: %s", err)
 	}
 
-	d.Logger.Infof("Inserted config_version %v", config_version.InsertedID)
+	d.Logger.Infof("Inserted configVersion %v", configVersion.InsertedID)
 
-	config_in := bson.D{
+	configIn := bson.D{
 		{"config_name", configIn.ConfigName},
 		{"created_by", configIn.Owner},
-		{"config_version", config_version.InsertedID},
+		{"config_version", configVersion.InsertedID},
 		{"host", hostID},
 		{"parents", configIn.Parents},
 		{"created", created},
@@ -223,14 +222,14 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 
 	// InsertOne accept two argument of type Context
 	// and of empty interface
-	config_resp, err := config_col.InsertOne(ctx, config_in)
+	configResp, err := configCol.InsertOne(ctx, configIn)
 	if err != nil {
 		d.Logger.Errorf("unable to insert config: %v", err)
 		return nil, fmt.Errorf("unable to insert config: %s", err)
 	}
 
-	d.Logger.Infof("created config object %s", config_resp.InsertedID)
-	return config_resp.InsertedID, nil
+	d.Logger.Infof("created config object %s", configResp.InsertedID)
+	return configResp.InsertedID, nil
 }
 
 // GetConfig returns a Config with the latest version of the ConfigVersion
@@ -256,11 +255,11 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	if hostID != "" {
 		hostPrefix = fmt.Sprintf("_%s", hostID)
 	}
-	cache_key := fmt.Sprintf("config_%s%s", configID, hostPrefix)
-	err := d.Cache.Get(cache_key, &respEnc)
+	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
+	err := d.Cache.Get(cacheKey, &respEnc)
 
-	config_col := d.DocumentStore.Database(config_db).Collection(config_collection)
-	config_version_col := d.DocumentStore.Database(config_db).Collection(config_version_collection)
+	configCol := d.DocumentStore.Database(configDB).Collection(configCollection)
+	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
 
 	if err == nil {
 		bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
@@ -273,7 +272,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 			d.Logger.Errorf("unable to retrieve config: %v", err)
 			return nil, fmt.Errorf("unable to retrieve config: %v", err)
 		}
-		logLine := utils.SanitizeLogMessage("cache hit for %s", cache_key)
+		logLine := utils.SanitizeLogMessage("cache hit for %s", cacheKey)
 		d.Logger.Infof(logLine)
 		return resp, nil
 	} else if err != persistence.ErrCacheMiss {
@@ -312,7 +311,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 			{metadataKey, metadataFilter},
 		}
 	}
-	err = config_col.FindOne(
+	err = configCol.FindOne(
 		ctx,
 		searchFilter,
 	).Decode(&result)
@@ -329,7 +328,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 
 	var versionResult bson.M
 
-	err = config_version_col.FindOne(
+	err = configVersionCol.FindOne(
 		ctx,
 		bson.D{{"_id", bson.M{"$eq": result["config_version"]}}},
 		options.FindOne().SetProjection(bson.M{"_id": 0, "checksum.Subtype": 0}),
@@ -349,7 +348,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	}
 
 	result["config"] = configResponse
-	logLine := utils.SanitizeLogMessage("setting cache for %s", cache_key)
+	logLine := utils.SanitizeLogMessage("setting cache for %s", cacheKey)
 	d.Logger.Infof(logLine)
 	bsonBin, err := bson.Marshal(result)
 	if err != nil {
@@ -357,7 +356,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 		return result, fmt.Errorf("error writing to the cache %s", err)
 	}
 	cacheEnc := b64.StdEncoding.EncodeToString(bsonBin)
-	err = d.Cache.Set(cache_key, cacheEnc, time.Hour)
+	err = d.Cache.Set(cacheKey, cacheEnc, time.Hour)
 	if err != nil {
 		d.Logger.Errorf("error writing to cache: %v", err)
 		return result, fmt.Errorf("error writing to the cache %s", err)
@@ -383,7 +382,7 @@ func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req inte
 
 	d.EmitMessage("config.audit", "GetConfigs", requestDetails)
 
-	config_col := d.DocumentStore.Database(config_db).Collection(config_collection)
+	configCol := d.DocumentStore.Database(configDB).Collection(configCollection)
 
 	if limit == "" {
 		limit = "100"
@@ -413,7 +412,7 @@ func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req inte
 	var results []models.ConfigStore
 
 	// see if there's an existing record
-	cursor, err := config_col.Find(
+	cursor, err := configCol.Find(
 		ctx,
 		bson.D{{}},
 	)
@@ -448,8 +447,8 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 	// select database and collection ith Client.Database method
 	// and Database.Collection method
 	d.EmitMessage("config.audit", "UpdateConfigByID", requestDetails)
-	config_col := d.DocumentStore.Database(config_db).Collection(config_collection)
-	config_version_col := d.DocumentStore.Database(config_db).Collection(config_version_collection)
+	configCol := d.DocumentStore.Database(configDB).Collection(configCollection)
+	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
 
 	var existingConfig bson.M
 
@@ -458,7 +457,7 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 		{Key: "_id", Value: sanitizedConfigID},
 	}
 	// see if there's an existing record
-	err := config_col.FindOne(
+	err := configCol.FindOne(
 		ctx,
 		filter,
 	).Decode(&existingConfig)
@@ -475,27 +474,27 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 	updated := time.Now()
 	checksum := sha256.Sum256([]byte(fmt.Sprintf("%s:%s+%s:%s", updateConfigIn.ConfigName, updateConfigIn.Requester, created.String(), updated.String())))
 
-	config_version_in := bson.D{
+	configVersionIn := bson.D{
 		{"config", updateConfigIn.Config},
 		{"config_name", updateConfigIn.ConfigName},
 		{"checksum", checksum},
 		{"created_by", updateConfigIn.Requester},
 		{"created", created},
 	}
-	// create a new config_version
-	config_version, err := config_version_col.InsertOne(ctx, config_version_in)
+	// create a new configVersion
+	configVersion, err := configVersionCol.InsertOne(ctx, configVersionIn)
 	if err != nil {
 		d.Logger.Errorf("unable to insert config_version: %v", err)
 		return nil, fmt.Errorf("unable to ingest config_version object: %s", err)
 	}
 
-	d.Logger.Infof("Inserted config_version %v", config_version.InsertedID)
+	d.Logger.Infof("Inserted config_version %v", configVersion.InsertedID)
 
 	mapFilter := bson.M{"_id": sanitizedConfigID}
 
 	// 6) Create the update
 	update := bson.M{
-		"$set": bson.M{"config_version": config_version.InsertedID},
+		"$set": bson.M{"config_version": configVersion.InsertedID},
 	}
 
 	upsert := false
@@ -506,10 +505,10 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 	}
 	// FindOneAndUpdate accept two argument of type Context
 	// and of empty interface
-	config_resp := config_col.FindOneAndUpdate(ctx, mapFilter, update, &opt)
+	configResp := configCol.FindOneAndUpdate(ctx, mapFilter, update, &opt)
 
-	d.Logger.Infof("updated config object %s", config_resp)
-	return config_resp, nil
+	d.Logger.Infof("updated config object %s", configResp)
+	return configResp, nil
 }
 
 // EmitMessage emits a message for the service. Currently only manages AuditEvents
@@ -527,7 +526,7 @@ func (d *DAL) EmitMessage(messageType, funcName string, body map[string]interfac
 			Topic:       messageType,
 			MessageType: pb.AuditLog_AUDIT,
 			FuncName:    funcName,
-			Service:     SERVICE_NAME,
+			Service:     serviceName,
 		}
 
 		// Write the new address book back to disk.
@@ -539,11 +538,11 @@ func (d *DAL) EmitMessage(messageType, funcName string, body map[string]interfac
 		}
 
 		//eventValue, _ := event.ToByteSlice()
-		delivery_chan := make(chan kafka.Event, 10000)
+		deliveryChan := make(chan kafka.Event, 10000)
 		err = d.Producer.Produce(&kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &messageType, Partition: kafka.PartitionAny},
 			Value:          out},
-			delivery_chan,
+			deliveryChan,
 		)
 
 		if err != nil {

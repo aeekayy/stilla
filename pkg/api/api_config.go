@@ -31,7 +31,7 @@ func AddConfig(dal *DAL) gin.HandlerFunc {
 		}
 
 		// span := sentry.StartSpan(c, "config.insert")
-		config_id, err := dal.InsertConfig(c, req, c.Request)
+		configID, err := dal.InsertConfig(c, req, c.Request)
 		// span.Finish()
 
 		if err != nil {
@@ -40,9 +40,9 @@ func AddConfig(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		dal.Logger.Infof("created config object %s", config_id)
+		dal.Logger.Infof("created config object %s", configID)
 		c.JSON(http.StatusCreated, gin.H{
-			"data": config_id,
+			"data": configID,
 		})
 	}
 

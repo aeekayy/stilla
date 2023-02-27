@@ -10,7 +10,7 @@
 
 package models
 
-// IdResponse ...
-type IdResponse struct {
-	Id *interface{} `json:"id,omitempty"`
+// IDResponse ...
+type IDResponse struct {
+	ID *interface{} `json:"id,omitempty"`
 }
