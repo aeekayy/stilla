@@ -2,9 +2,14 @@
 package db
 
 import (
+	"context"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+)
+
+var (
+	dbPool *pgxpool.Pool
 )
 
 type dbConn struct {
@@ -14,31 +19,50 @@ type dbConn struct {
 	dbName string
 }
 
-// MockedDB is used in unit tests to mock db
-func NewMockDB() pgxMock.PgxConnIface {
-	return pgxmockConn.NewConn()
+// pgmock mocks a psql database
+type pgmock struct {
 }
 
-// TestPostgresConnect test Postgres connection function Connect
-func TestPostgresConnect(t *testing.T) {
-	t.Parallel()
+// TestPassConnect
+func TestPassConnect(t *testing.T) {
+	ctx := context.Background()
 
-	// the test matrix for Connect
-	tests := []struct {
-		name string
-		in   dbConn
-		out  string
-	}{
-		{"empty hostname", dbConn{"", "", "", ""}, "can't enter empty hostname name"},
-	}
+	dbUser := "postgres"
+	dbPass := "postgres"
+	dbHost := "localhost"
+	dbName := "stilla"
+	dbParams := ""
 
-	for _, test := range tests {
-		test := test
-		t.Log(test.name)
-		ctx := context.TODO()
-		conn, err := Connect(ctx, test.in.dbUser, test.in.dbPass, test.in.dbHost, test.in.dbName)
-		if err.Error != test.out {
-			t.Error("%s test result mismatch. Got %s, exepcted %s", test.name, err, test.out)
-		}
+	_, err := Connect(&ctx, dbUser, dbPass, dbHost, dbName, dbParams)
+
+	if err != nil {
+		t.Errorf("expected no error, received: %s", err)
 	}
+}
+
+// TestFailConnect
+func TestFailConnect(t *testing.T) {
+	ctx := context.Background()
+
+	dbUser := ""
+	dbPass := ""
+	dbHost := ""
+	dbName := ""
+	dbParams := ""
+
+	_, err := Connect(&ctx, dbUser, dbPass, dbHost, dbName, dbParams)
+
+	if err == nil {
+		t.Errorf("expected an error, received no error")
+	}
+}
+
+func setup() {
+	dbUser := "postgres"
+	dbPass := "postgres"
+	dbHost := "localhost"
+	dbName := "stilla"
+	dbParams := ""
+
+	dbPool, _ := Connect(&ctx, dbUser, dbPass, dbHost, dbName, dbParams)
 }

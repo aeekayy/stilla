@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 	"github.com/go-session/gin-session"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"github.com/pkg/errors"
 	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
@@ -99,7 +100,22 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 		}
 	}
 
-	dal := NewDAL(&ctx, sugar, config, dbConn, mongoConn, store, kafkaProducer, "config", config.SessionKey)
+	var nrapp *newrelic.Application
+	// New Relic setup
+	if config.NewRelic.Enabled {
+		nrapp, err = newrelic.NewApplication(
+			newrelic.ConfigAppName(config.NewRelic.AppName),
+			newrelic.ConfigLicense(config.NewRelic.License),
+			newrelic.ConfigAppLogForwardingEnabled(config.NewRelic.AppLogForwarding),
+		)
+
+		if err != nil {
+			sugar.Fatalf("failed to initialized new relic: %s", err)
+			return nil, err
+		}
+	}
+
+	dal := NewDAL(&ctx, sugar, nrapp, config, dbConn, mongoConn, store, kafkaProducer, "config", config.SessionKey)
 	router := NewRouter(dal)
 
 	router.Use(cors.New(cors.Config{

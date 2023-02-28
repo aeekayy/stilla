@@ -20,12 +20,21 @@ type Config struct {
 	Audit       bool                   `yaml:"audit" json:"audit"`
 	SessionKey  string                 `yaml:"session_key" json:"session_key"`
 	Sentry      SentryConfig           `yaml:"sentry" json:"sentry"`
+	NewRelic    NewRelicConfig         `yaml:"new_relic" json:"new_relic"`
 }
 
 // SentryConfig configuration for Sentry
 type SentryConfig struct {
 	Enabled bool   `yaml:"enabled" json:"enabled"`
 	DSN     string `yaml:"dsn" json:"dsn"`
+}
+
+// NewRelicConfig configuration for New Relic
+type NewRelicConfig struct {
+	Enabled          bool   `yaml:"enabled" json:"enabled"`
+	AppName          string `yaml:"app_name" json:"app_name"`
+	License          string `yaml:"license" json:"license"`
+	AppLogForwarding bool   `yaml:"app_log_forwarding" json:"app_log_forwarding"`
 }
 
 // GetKafkaConfig retrieves a Kafka.ConfigMap compatible struct from

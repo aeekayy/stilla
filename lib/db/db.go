@@ -20,11 +20,11 @@ var (
 
 // APIKey ApiKey for authentication
 type APIKey struct {
-	ID      uuid.UUID `yaml:"id",json:"id"`
-	Name    string    `yaml:"name",json:"name"`
-	Role    uuid.UUID `yaml:"role",json:"role"`
-	Created time.Time `yaml:"created",json:"created"`
-	Updated time.Time `yaml:"updated",json:"updated"`
+	ID      uuid.UUID `yaml:"id" json:"id" sql:"id"`
+	Name    string    `yaml:"name" json:"name" sql:"name"`
+	Role    uuid.UUID `yaml:"role" json:"role" sql:"role"`
+	Created time.Time `yaml:"created" json:"created" sql:"created"`
+	Updated time.Time `yaml:"updated" json:"updated" sql:"updated"`
 }
 
 // APIKey API key for the application. This needs to move

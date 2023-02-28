@@ -16,6 +16,7 @@ import (
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -49,6 +50,7 @@ type DAL struct {
 	Logger        *zap.SugaredLogger      `json:"logger"`
 	Producer      *kafka.Producer         `json:"producer"`
 	SessionKey    string                  `json:"session_key"`
+	APM           *newrelic.Application    `json:"apm"`
 }
 
 // AuditEvent audit event struct for sending messages of service events
@@ -65,7 +67,7 @@ type HostCache struct {
 }
 
 // NewDAL returns a new DAL
-func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, config *svcmodels.Config, dbConn *pgxpool.Pool, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
+func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn *pgxpool.Pool, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
 	return &DAL{
 		Context:       ctx,
 		Config:        config,
@@ -76,6 +78,7 @@ func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, config *svcmodels.Co
 		Logger:        sugar,
 		Producer:      producer,
 		SessionKey:    sessionKey,
+		APM:           apm,
 	}
 }
 

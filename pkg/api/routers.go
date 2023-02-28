@@ -17,6 +17,7 @@ import (
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/newrelic/go-agent/v3/integrations/nrgin"
 )
 
 const hostKey = "host"
@@ -55,6 +56,10 @@ func NewRouter(dal *DAL) *gin.Engine {
 		router.Use(sentrygin.New(sentrygin.Options{
 			Repanic: true,
 		}))
+	}
+
+	if dal.Config.NewRelic.Enabled {
+		router.Use(nrgin.Middleware(dal.APM))
 	}
 
 	// Simple group: v1
