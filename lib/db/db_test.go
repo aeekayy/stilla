@@ -3,24 +3,34 @@ package db
 
 import (
 	"context"
+	"log"
 	"testing"
-
-	"github.com/jackc/pgx/v5/pgxpool"
+	"time"
 )
 
-var (
-	dbPool *pgxpool.Pool
-)
+func setupDB(tb testing.TB) (*DBConn, func(tb testing.TB, d *DBConn), error) {
+	log.Println("setup db")
+	ctx, _ := context.WithTimeout(context.Background(), time.Second)
 
-type dbConn struct {
-	dbUser string
-	dbPass string
-	dbHost string
-	dbName string
-}
+	dbUser := "postgres"
+	dbPass := "postgres"
+	dbHost := "localhost"
+	dbName := "stilla"
+	dbParams := ""
 
-// pgmock mocks a psql database
-type pgmock struct {
+	pool, err := Connect(&ctx, dbUser, dbPass, dbHost, dbName, dbParams)
+
+	if err != nil {
+		log.Fatal("Can't connect to pool")
+		return nil, nil, err
+	}
+
+	teardownFunc := func(tb testing.TB, pool *DBConn) {
+		log.Println("teardown db")
+		pool.Close()
+	}
+
+	return pool, teardownFunc, nil
 }
 
 // TestPassConnect
@@ -40,29 +50,32 @@ func TestPassConnect(t *testing.T) {
 	}
 }
 
-// TestFailConnect
-func TestFailConnect(t *testing.T) {
-	ctx := context.Background()
+// TestSuiteAllQueries
+func TestSuiteAllQueries(t *testing.T) {
+	pgpool, teardownSuite, err := setupDB(t)
+	defer teardownSuite(t, pgpool)
 
-	dbUser := ""
-	dbPass := ""
-	dbHost := ""
-	dbName := ""
-	dbParams := ""
-
-	_, err := Connect(&ctx, dbUser, dbPass, dbHost, dbName, dbParams)
-
-	if err == nil {
-		t.Errorf("expected an error, received no error")
+	if err != nil {
+		t.Errorf("could not create database pool")
 	}
-}
 
-func setup() {
-	dbUser := "postgres"
-	dbPass := "postgres"
-	dbHost := "localhost"
-	dbName := "stilla"
-	dbParams := ""
+	table := []struct {
+		name          string
+		inputName     string
+		inputTags     []string
+		errorExpected bool
+	}{
+		{"GenerateAPIKeyPass", "test", []string{"test1", "test2"}, false},
+		{"GenerateAPIKeyFail", "", []string{"test1", "test2"}, true},
+	}
 
-	dbPool, _ := Connect(&ctx, dbUser, dbPass, dbHost, dbName, dbParams)
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := pgpool.GenerateAPIKey(tc.inputName, tc.inputTags)
+			
+			if (err != nil) != tc.errorExpected {
+				t.Errorf("expected %t, got %s", tc.errorExpected, err)
+			}
+		})
+	}
 }

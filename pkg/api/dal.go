@@ -15,7 +15,6 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -44,13 +43,13 @@ type DAL struct {
 	Collection    string                  `json:"collection,omitempty"`
 	Cache         *persistence.RedisStore `json:"cache"`
 	Config        *svcmodels.Config       `json:"config"`
-	Database      *pgxpool.Pool           `json:"database"`
+	Database      *db.DBConn              `json:"database"`
 	Context       *context.Context        `json:"context"`
 	DocumentStore *mongo.Client           `json:"document_store"`
 	Logger        *zap.SugaredLogger      `json:"logger"`
 	Producer      *kafka.Producer         `json:"producer"`
 	SessionKey    string                  `json:"session_key"`
-	APM           *newrelic.Application    `json:"apm"`
+	APM           *newrelic.Application   `json:"apm"`
 }
 
 // AuditEvent audit event struct for sending messages of service events
@@ -67,7 +66,7 @@ type HostCache struct {
 }
 
 // NewDAL returns a new DAL
-func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn *pgxpool.Pool, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
+func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn *db.DBConn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
 	return &DAL{
 		Context:       ctx,
 		Config:        config,
@@ -106,7 +105,7 @@ func (d *DAL) RegisterHost(ctx *gin.Context, hostRegisterIn models.HostRegisterI
 
 	d.EmitMessage("config.audit", "HostRegister", requestDetails)
 
-	apiKey, err := db.GenerateAPIKey(hostRegisterIn.Name, hostRegisterIn.Tags)
+	apiKey, err := d.Database.GenerateAPIKey(hostRegisterIn.Name, hostRegisterIn.Tags)
 	d.Logger.Infof("Generated API key")
 
 	if err != nil {
@@ -132,7 +131,7 @@ func (d *DAL) LoginHost(ctx *gin.Context, hostLoginIn models.HostLoginIn, req in
 
 	d.EmitMessage("config.audit", "HostLogin", requestDetails)
 
-	hostKey, err := db.ValidateAPIKey(hostLoginIn.APIKey)
+	hostKey, err := d.Database.ValidateAPIKey(hostLoginIn.APIKey)
 
 	if err != nil {
 		return "", fmt.Errorf("invalid api key for host: %s", err)
@@ -621,10 +620,10 @@ func (d *DAL) GetAuditLogs(ctx *gin.Context, offset string, limit string, req in
 }
 
 // ValidateToken ...
-func ValidateToken(token string) (string, bool, error) {
+func ValidateToken(dal *DAL, token string) (string, bool, error) {
 	var resp string
 
-	resp, err := db.ValidateAPIKey(token)
+	resp, err := dal.Database.ValidateAPIKey(token)
 
 	if resp != "" {
 		return resp, true, nil

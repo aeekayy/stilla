@@ -62,9 +62,11 @@ func NewRouter(dal *DAL) *gin.Engine {
 		router.Use(nrgin.Middleware(dal.APM))
 	}
 
+	authRequired := AuthRequired(dal)
+
 	// Simple group: v1
 	hostGroup := router.Group("/api/v1/host")
-	hostGroup.Use(AuthRequired)
+	hostGroup.Use(authRequired)
 	for _, route := range hostRoutes {
 		handler := route.HandlerFunc(dal)
 		switch route.Method {
@@ -99,7 +101,7 @@ func NewRouter(dal *DAL) *gin.Engine {
 	}
 
 	recordGroup := router.Group("/api/v1/records")
-	recordGroup.Use(AuthRequired)
+	recordGroup.Use(authRequired)
 	for _, route := range recordRoutes {
 		handler := route.HandlerFunc(dal)
 		switch route.Method {
@@ -117,7 +119,7 @@ func NewRouter(dal *DAL) *gin.Engine {
 	}
 
 	configGroup := router.Group("/api/v1/config")
-	configGroup.Use(AuthRequired)
+	configGroup.Use(authRequired)
 	for _, route := range configRoutes {
 		handler := route.HandlerFunc(dal)
 		switch route.Method {
@@ -135,7 +137,7 @@ func NewRouter(dal *DAL) *gin.Engine {
 	}
 
 	configsGroup := router.Group("/api/v1/configs")
-	configsGroup.Use(AuthRequired)
+	configsGroup.Use(authRequired)
 	for _, route := range configsRoutes {
 		handler := route.HandlerFunc(dal)
 		switch route.Method {
@@ -236,28 +238,32 @@ func extractToken(c *gin.Context) (string, bool) {
 }
 
 // AuthRequired is a simple middleware to check the session
-func AuthRequired(c *gin.Context) {
-	var host interface{}
-	token, ok := extractToken(c)
-	if ok {
-		// check for the token's validity
-		host, ok, _ = ValidateToken(token)
-		c.Set("x-host-id", token)
-		if !ok {
+func AuthRequired(d *DAL) gin.HandlerFunc {
+	fn := func(c *gin.Context) {
+		var host interface{}
+		token, ok := extractToken(c)
+		if ok {
+			// check for the token's validity
+			host, ok, _ = ValidateToken(d, token)
+			c.Set("x-host-id", token)
+			if !ok {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			}
+		} else {
+			session := sessions.Default(c)
+			host = session.Get(hostKey)
+		}
+
+		if host == "" {
+			// Abort the request with the appropriate error code
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		}
-	} else {
-		session := sessions.Default(c)
-		host = session.Get(hostKey)
+		// set the context
+		c.Set("x-host", host)
+
+		// Continue down the chain to handler etc
+		c.Next()
 	}
 
-	if host == "" {
-		// Abort the request with the appropriate error code
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
-	}
-	// set the context
-	c.Set("x-host", host)
-
-	// Continue down the chain to handler etc
-	c.Next()
+	return gin.HandlerFunc(fn)
 }
