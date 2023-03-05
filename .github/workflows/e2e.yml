@@ -71,6 +71,10 @@ jobs:
       - name: Setup Dependencies
         run: |
           just setup
+        env:
+          # The hostname used to communicate with the PostgreSQL service container
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: 5432
 
       - name: Build Stilla
         run: |
