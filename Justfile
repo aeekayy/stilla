@@ -39,6 +39,8 @@ fmt:
 unit-test:
 	go test -v ./...
 
+test: unit-test
+
 performance:
 	pushd lib/db
 	go test -bench=.
