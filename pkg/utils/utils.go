@@ -55,7 +55,7 @@ func SanitizeLogMessage(log, userInput string) string {
 
 	//fullLog := fmt.Sprintf(log, userInput)
 	cleanLog := strings.Replace(log, userInput, cleanUserInput, -1)
-	cleanLog := strings.Replace(cleanLog, "\n", "", -1)
+	cleanLog = strings.Replace(cleanLog, "\n", "", -1)
 	cleanLog = strings.Replace(cleanLog, "\r", "", -1)
 
 	return cleanLog

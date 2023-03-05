@@ -30,5 +30,13 @@ setup:
 	# install atlas
 	curl -sSf https://atlasgo.sh | sh
 
+lint:
+	golint ./...
+
+fmt:
+	go fmt ./...
+
 test:
 	go test -v ./...
+
+prepare-commit: lint fmt test
