@@ -63,7 +63,7 @@ jobs:
       - name: Setup Tools
         run: |
           apt update -y
-          apt install -y postgresql-client
+          apt install -y postgresql-client unzip
 
       - name: Setup Just
         uses: extractions/setup-just@v1
