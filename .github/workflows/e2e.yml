@@ -86,5 +86,6 @@ jobs:
           POSTGRES_HOST: postgres
           POSTGRES_PORT: 5432
 
-      - name: Run Stilla
-        run: ./stilla
+      - name: Test Stilla
+        run: |
+          just test
