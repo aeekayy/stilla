@@ -34,7 +34,8 @@ func HostRegister(dal *DAL) gin.HandlerFunc {
 		apiKey, err := dal.RegisterHost(c, req, c.Request)
 
 		if err != nil {
-			dal.Logger.Errorf("unable to register host: %v", req.Name)
+			output := utils.SanitizeLogMessage(req.Name, req.Name)
+			dal.Logger.Errorf("unable to register host: %v", output)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to register host"})
 			return
 		}

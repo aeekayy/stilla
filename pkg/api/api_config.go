@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/aeekayy/stilla/pkg/api/models"
+	"github.com/aeekayy/stilla/pkg/utils"
 )
 
 // AddConfig - Create a new configuration and configuration value
@@ -35,7 +36,8 @@ func AddConfig(dal *DAL) gin.HandlerFunc {
 		// span.Finish()
 
 		if err != nil {
-			dal.Logger.Errorf("unable to insert config: %v", req.ConfigName)
+			output := utils.SanitizeLogMessage(req.ConfigName, req.ConfigName)
+			dal.Logger.Errorf("unable to insert config: %v", output)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to insert configuration"})
 			return
 		}
@@ -66,7 +68,8 @@ func GetConfigByID(dal *DAL) gin.HandlerFunc {
 		// span.Finish()
 
 		if err != nil {
-			dal.Logger.Errorf("unable to retrieve config: %v", configID)
+			output := utils.SanitizeLogMessage(configID, configID)
+			dal.Logger.Errorf("unable to retrieve config: %v", output)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to retrieve configuration"})
 			return
 		}
