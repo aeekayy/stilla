@@ -3,7 +3,7 @@ api_spec := "api/openapi.yaml"
 api_path := "./pkg/api"
 svc_db := trim(`psql "postgresql://postgres:postgres@${POSTGRES_HOST:-localhost}:5432/postgres" -c "select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('stilla'));" -t`)
 protoc_ver := "22.0"
-protoc_zip := "protoc-{{protoc_ver}}-linux-x86_64.zip"
+protoc_zip := "protoc-" + protoc_ver + "-linux-x86_64.zip"
 
 
 set shell := ["bash", "-uc"]
