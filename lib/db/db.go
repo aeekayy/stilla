@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -18,10 +20,12 @@ var (
 	dbPool    *pgxpool.Pool
 	dbCtx     *context.Context
 	mongoConn *mongo.Client
+	apiKeyNameBlacklist = []string{"apikey", "name"}
 )
 
 type DBConn struct {
 	Pool *pgxpool.Pool
+	Ctx		context.Context
 }
 
 // Close
@@ -75,6 +79,7 @@ func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams stri
 
 	dbCtx = ctx
 	db.Pool = pool
+	db.Ctx = *ctx
 
 	return db, nil
 }
@@ -102,7 +107,7 @@ func (d *DBConn) GetAPIKey(keyID string) (APIKey, error) {
 	var apiID, apiName, apiRoleID string
 	var apiCreated, apiUpdated time.Time
 
-	err := dbPool.QueryRow(*dbCtx, "SELECT id, name, role, created, updated FROM api_keys WHERE id=$1;", keyID).Scan(&apiID, &apiName, &apiRoleID, &apiCreated, &apiUpdated)
+	err := d.Pool.QueryRow(*dbCtx, "SELECT id, name, role, created, updated FROM api_keys WHERE id=$1;", keyID).Scan(&apiID, &apiName, &apiRoleID, &apiCreated, &apiUpdated)
 
 	apiKey.ID = uuid.MustParse(apiID)
 	apiKey.Name = apiName
@@ -117,7 +122,11 @@ func (d *DBConn) GetAPIKey(keyID string) (APIKey, error) {
 func (d *DBConn) GenerateAPIKey(name string, tags []string) (string, error) {
 	var apiKeyID string
 
-	err := dbPool.QueryRow(*dbCtx, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&apiKeyID)
+	if ! isValidName(name) {
+		return "", fmt.Errorf("invalid name entered. %s is not allowed", name)
+	}
+
+	err := d.Pool.QueryRow(d.Ctx, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&apiKeyID)
 
 	return apiKeyID, err
 }
@@ -126,7 +135,25 @@ func (d *DBConn) GenerateAPIKey(name string, tags []string) (string, error) {
 func (d *DBConn) ValidateAPIKey(id string) (string, error) {
 	var hostname string
 
-	err := dbPool.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostname)
+	err := d.Pool.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostname)
 
 	return hostname, err
+}
+
+// ValidateConnection validates the pool with a ping
+func (d *DBConn) ValidateConnection() error {
+	return d.Pool.Ping(d.Ctx)
+}
+
+// isValidName checks to see if an api key has a valid name
+func isValidName(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	if slices.Contains(apiKeyNameBlacklist, name) {
+		return false
+	}
+
+	return true
 }
