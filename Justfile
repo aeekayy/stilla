@@ -36,7 +36,7 @@ lint:
 fmt:
 	go fmt ./...
 
-test:
+unit-test:
 	go test -v ./...
 
 performance:
@@ -44,4 +44,4 @@ performance:
 	go test -bench=.
 	popd
 
-prepare-commit: lint fmt test performance
+prepare-commit: lint fmt unit-test performance
