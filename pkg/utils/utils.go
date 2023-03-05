@@ -43,18 +43,22 @@ func SanitizeMessageValue(i interface{}) interface{} {
 }
 
 // SanitizeLogMessage removes user input from the log output
-func SanitizeLogMessage(log, userInput string) string {
-	if userInput == "" {
-		return log
-	}
+func SanitizeLogMessage(log string, input ...string) string {
+	cleanLog := log
 
-	cleanUserInput := "****"
-	if len(userInput) > 3 {
-		cleanUserInput = userInput[0:3] + "****"
-	}
+	for _, v := range input {
+		if v == "" {
+			return log
+		}
 
-	//fullLog := fmt.Sprintf(log, userInput)
-	cleanLog := strings.Replace(log, userInput, cleanUserInput, -1)
+		cleanUserInput := "****"
+		if len(v) > 3 {
+			cleanUserInput = v[0:3] + "****"
+		}
+
+		//fullLog := fmt.Sprintf(log, userInput)
+		cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
+	}
 	cleanLog = strings.Replace(cleanLog, "\n", "", -1)
 	cleanLog = strings.Replace(cleanLog, "\r", "", -1)
 

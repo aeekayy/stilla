@@ -13,9 +13,11 @@ package api
 import (
 	"net/http"
 
-	"github.com/aeekayy/stilla/pkg/api/models"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+
+	"github.com/aeekayy/stilla/pkg/api/models"
+	"github.com/aeekayy/stilla/pkg/utils"
 )
 
 // HostRegister - Register host for an API key
@@ -32,7 +34,7 @@ func HostRegister(dal *DAL) gin.HandlerFunc {
 		apiKey, err := dal.RegisterHost(c, req, c.Request)
 
 		if err != nil {
-			dal.Logger.Errorf("unable to register host: %v", err)
+			dal.Logger.Errorf("unable to register host: %v", req.Name)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to register host"})
 			return
 		}

@@ -35,7 +35,7 @@ func AddConfig(dal *DAL) gin.HandlerFunc {
 		// span.Finish()
 
 		if err != nil {
-			dal.Logger.Errorf("unable to insert config: %v", err)
+			dal.Logger.Errorf("unable to insert config: %v", req.ConfigName)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to insert configuration"})
 			return
 		}
@@ -66,7 +66,7 @@ func GetConfigByID(dal *DAL) gin.HandlerFunc {
 		// span.Finish()
 
 		if err != nil {
-			dal.Logger.Errorf("unable to retrieve config: %v", err)
+			dal.Logger.Errorf("unable to retrieve config: %v", configID)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to retrieve configuration"})
 			return
 		}
