@@ -18,7 +18,7 @@ const charset = "abcdefghijklmnopqrstuvwxyz" +
 
 var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-func setupDB(tb testing.TB) (*DBConn, func(tb testing.TB, d *DBConn), error) {
+func setupDB(tb testing.TB) (*Conn, func(tb testing.TB, d *Conn), error) {
 	log.Println("setup db")
 	ctx, _ := context.WithTimeout(context.Background(), time.Second)
 
@@ -35,7 +35,7 @@ func setupDB(tb testing.TB) (*DBConn, func(tb testing.TB, d *DBConn), error) {
 		return nil, nil, err
 	}
 
-	teardownFunc := func(tb testing.TB, pool *DBConn) {
+	teardownFunc := func(tb testing.TB, pool *Conn) {
 		log.Println("teardown db")
 		pool.Close()
 	}
