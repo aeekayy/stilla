@@ -9,7 +9,7 @@ protoc_zip := "protoc-" + protoc_ver + "-linux-x86_64.zip"
 set shell := ["bash", "-uc"]
 
 build:
-	go build -o {{name}}
+	go build -ldflags="-X 'main.Version=v0.0.1' -X 'main.BuildTime=$(date)' -X 'main.CommitHash=$(git rev-parse HEAD)'" -o {{name}}
 
 gen-api:
 	java -jar ~/openapi-generator-cli.jar generate -i {{api_spec}} -g go-gin-server -o {{api_path}} --skip-validate-spec
