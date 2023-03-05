@@ -17,31 +17,35 @@ import (
 )
 
 var (
-	dbPool    *pgxpool.Pool
-	dbCtx     *context.Context
-	mongoConn *mongo.Client
+	dbPool              *pgxpool.Pool
+	dbCtx               *context.Context
+	mongoConn           *mongo.Client
 	apiKeyNameBlacklist = []string{"apikey", "name"}
 )
 
-type DBConn struct {
+// Conn database connection pool and context
+type Conn struct {
 	Pool *pgxpool.Pool
-	Ctx		context.Context
+	Ctx  context.Context
 }
 
-// Close
-func (d *DBConn) Close() {
+// Close close the connection pool
+func (d *Conn) Close() {
 	d.Pool.Close()
 }
 
-func (d *DBConn) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+// Exec execute a command via the connection pool
+func (d *Conn) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 	return d.Pool.Exec(ctx, sql, args...)
 }
 
-func (d *DBConn) Query(ctx context.Context, sql string, optionsAndArgs ...any) (pgx.Rows, error) {
+// Query execute a query via the connection pool
+func (d *Conn) Query(ctx context.Context, sql string, optionsAndArgs ...any) (pgx.Rows, error) {
 	return d.Pool.Query(ctx, sql, optionsAndArgs...)
 }
 
-func (d *DBConn) QueryRow(ctx context.Context, sql string, optionsAndArgs ...any) pgx.Row {
+// QueryRow execute a query via the connection pool. Return a row.
+func (d *Conn) QueryRow(ctx context.Context, sql string, optionsAndArgs ...any) pgx.Row {
 	return d.Pool.QueryRow(ctx, sql, optionsAndArgs...)
 }
 
@@ -59,10 +63,10 @@ type APIKey struct {
 // type APIKey APIKey
 
 // Connect connect to a Postgres compatible database.
-func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams string) (*DBConn, error) {
+func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams string) (*Conn, error) {
 	// https://github.com/jackc/pgx/blob/master/batch_test.go#L32
 
-	db := &DBConn{
+	db := &Conn{
 		Pool: nil,
 	}
 	connString := fmt.Sprintf("postgresql://%s:%s@%s/%s?%s", dbUser, dbPass, dbHost, dbName, dbParams)
@@ -102,7 +106,7 @@ func MongoConnect(ctx *context.Context, dbUser, dbPass, dbHost, dbTimeout string
 
 // GetAPIKey retrieves an API key from the database
 // TODO: Add validation to the function
-func (d *DBConn) GetAPIKey(keyID string) (APIKey, error) {
+func (d *Conn) GetAPIKey(keyID string) (APIKey, error) {
 	var apiKey APIKey
 	var apiID, apiName, apiRoleID string
 	var apiCreated, apiUpdated time.Time
@@ -119,10 +123,10 @@ func (d *DBConn) GetAPIKey(keyID string) (APIKey, error) {
 }
 
 // GenerateAPIKey generate an api key and a public key for a new host
-func (d *DBConn) GenerateAPIKey(name string, tags []string) (string, error) {
+func (d *Conn) GenerateAPIKey(name string, tags []string) (string, error) {
 	var apiKeyID string
 
-	if ! isValidName(name) {
+	if !isValidName(name) {
 		return "", fmt.Errorf("invalid name entered. %s is not allowed", name)
 	}
 
@@ -132,7 +136,7 @@ func (d *DBConn) GenerateAPIKey(name string, tags []string) (string, error) {
 }
 
 // ValidateAPIKey validates an API Key for a host
-func (d *DBConn) ValidateAPIKey(id string) (string, error) {
+func (d *Conn) ValidateAPIKey(id string) (string, error) {
 	var hostname string
 
 	err := d.Pool.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostname)
@@ -141,7 +145,7 @@ func (d *DBConn) ValidateAPIKey(id string) (string, error) {
 }
 
 // ValidateConnection validates the pool with a ping
-func (d *DBConn) ValidateConnection() error {
+func (d *Conn) ValidateConnection() error {
 	return d.Pool.Ping(d.Ctx)
 }
 

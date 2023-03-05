@@ -3,6 +3,7 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -43,10 +44,25 @@ func SanitizeMessageValue(i interface{}) interface{} {
 
 // SanitizeLogMessage removes user input from the log output
 func SanitizeLogMessage(log, userInput string) string {
+	if userInput == "" {
+		return log
+	}
+
 	cleanUserInput := userInput + "****"
 	if len(userInput) > 3 {
 		cleanUserInput = userInput[0:3] + "****"
+	} else {
+		cleanUserInput = "****"
 	}
-	fullLog := fmt.Sprintf(log, userInput)
-	return strings.Replace(fullLog, userInput, cleanUserInput, -1)
+	//fullLog := fmt.Sprintf(log, userInput)
+	return strings.Replace(log, userInput, cleanUserInput, -1)
+}
+
+// GetEnv get key environment variable if exist otherwise return defalutValue
+func GetEnv(key, defaultValue string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return defaultValue
+	}
+	return value
 }

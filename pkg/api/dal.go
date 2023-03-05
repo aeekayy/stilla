@@ -43,7 +43,7 @@ type DAL struct {
 	Collection    string                  `json:"collection,omitempty"`
 	Cache         *persistence.RedisStore `json:"cache"`
 	Config        *svcmodels.Config       `json:"config"`
-	Database      *db.DBConn              `json:"database"`
+	Database      *db.Conn                `json:"database"`
 	Context       *context.Context        `json:"context"`
 	DocumentStore *mongo.Client           `json:"document_store"`
 	Logger        *zap.SugaredLogger      `json:"logger"`
@@ -66,7 +66,7 @@ type HostCache struct {
 }
 
 // NewDAL returns a new DAL
-func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn *db.DBConn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
+func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn *db.Conn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
 	return &DAL{
 		Context:       ctx,
 		Config:        config,

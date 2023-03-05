@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/aeekayy/stilla/pkg/utils"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz" +
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -22,7 +24,7 @@ func setupDB(tb testing.TB) (*DBConn, func(tb testing.TB, d *DBConn), error) {
 
 	dbUser := "postgres"
 	dbPass := "postgres"
-	dbHost := "localhost"
+	dbHost := utils.GetEnv("POSTGRES_HOST", "localhost")
 	dbName := "stilla"
 	dbParams := "sslmode=disable"
 
@@ -47,7 +49,7 @@ func TestPassConnect(t *testing.T) {
 
 	dbUser := "postgres"
 	dbPass := "postgres"
-	dbHost := "localhost"
+	dbHost := utils.GetEnv("POSTGRES_HOST", "localhost")
 	dbName := "stilla"
 	dbParams := ""
 
@@ -65,20 +67,20 @@ func TestPassConnect(t *testing.T) {
 	}
 }
 
-// TestValidateConnectionNoConnection tests ValidateConnection when no valid connection has been 
-// established 
+// TestValidateConnectionNoConnection tests ValidateConnection when no valid connection has been
+// established
 func TestValidateConnectionNoConnection(t *testing.T) {
 	ctx := context.Background()
 
 	dbUser := "postgres"
 	dbPass := "postgres"
-	dbHost := "localhost"
+	dbHost := utils.GetEnv("POSTGRES_HOST", "localhost")
 	dbName := "baddb"
 	dbParams := ""
 
 	pool, _ := Connect(&ctx, dbUser, dbPass, dbHost, dbName, dbParams)
 
-	err := pool.ValidateConnection() 
+	err := pool.ValidateConnection()
 
 	if err == nil {
 		t.Errorf("expected an error. received no error")
@@ -103,7 +105,7 @@ func TestSuiteAllQueries(t *testing.T) {
 		inputName     string
 		inputTags     []string
 		errorExpected bool
-		checkKey		bool
+		checkKey      bool
 	}{
 		{"GenerateAPIKeyPass", "test", []string{"test1", "test2"}, false, false},
 		{"GenerateAPIKeyFailEmptyName", "", []string{"test1", "test2"}, true, false},
@@ -120,7 +122,7 @@ func TestSuiteAllQueries(t *testing.T) {
 				keyName = randstring(10)
 			}
 			key, err := pgpool.GenerateAPIKey(keyName, tc.inputTags)
-			
+
 			if (err != nil) != tc.errorExpected {
 				t.Errorf("expected %t, got the error %+v", tc.errorExpected, err)
 			}
@@ -139,13 +141,13 @@ func TestSuiteAllQueries(t *testing.T) {
 }
 
 func stringWithCharset(length int, charset string) string {
-  b := make([]byte, length)
-  for i := range b {
-    b[i] = charset[seededRand.Intn(len(charset))]
-  }
-  return string(b)
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = charset[seededRand.Intn(len(charset))]
+	}
+	return string(b)
 }
 
 func randstring(length int) string {
-  return stringWithCharset(length, charset)
+	return stringWithCharset(length, charset)
 }

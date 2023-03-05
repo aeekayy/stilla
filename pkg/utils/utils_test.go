@@ -2,8 +2,11 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type TestStruct struct {
@@ -21,6 +24,33 @@ func TestSanitizeMessageValueStruct(t *testing.T) {
 	}
 }
 
+// TestSuiteSanitizeMessage
+func TestSuiteSanitizeMessage(t *testing.T) {
+	userInput := "5ca9dba"
+	shortUserInput := "5c"
+	emptyUserInput := ""
+
+	table := []struct {
+		name     string
+		input    string
+		log      string
+		expected string
+	}{
+		{"TestPositiveSanitizeLogMessage", userInput, fmt.Sprintf("This is a log line with a cache key: %s", userInput), "This is a log line with a cache key: 5ca****"},
+		{"TestPositiveSanitizeLogMessageMultiple", userInput, fmt.Sprintf("This is a log line with a cache key: %s. Cache key: %s", userInput, userInput), "This is a log line with a cache key: 5ca****. Cache key: 5ca****"},
+		{"TestPositiveSanitizeLogMessageShortKey", shortUserInput, fmt.Sprintf("This is a log line with a cache key: %s", shortUserInput), "This is a log line with a cache key: ****"},
+		{"TestPositiveSanitizeLogMessageEmpty", emptyUserInput, fmt.Sprintf("This is a log line with a cache key: %s", emptyUserInput), "This is a log line with a cache key: "},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			ans := SanitizeLogMessage(tc.log, tc.input)
+			assert.Equal(t, ans, tc.expected, "the log outputs should match.")
+		})
+	}
+}
+
+// TestSanitizeMessageValueBool
 func TestSanitizeMessageValueBool(t *testing.T) {
 	testBool := false
 	v := SanitizeMessageValue(testBool)
@@ -33,50 +63,31 @@ func TestSanitizeMessageValueBool(t *testing.T) {
 	}
 }
 
-func TestPositiveSanitizeLogMessage(t *testing.T) {
-	userInput := "5ca9dba"
-	log := fmt.Sprintf("This is a log line with a cache key: %s", userInput)
-	expected := "This is a log line with a cache key: 5ca****"
-
-	ans := SanitizeLogMessage(log, userInput)
-
-	if ans != expected {
-		t.Errorf("The sanitize log message does not match. The response was: %s", ans)
+// TestSuiteGetEnv
+func TestSuiteGetEnv(t *testing.T) {
+	table := []struct {
+		name          string
+		inputKey      string
+		inputDefault  string
+		inputValue    string
+		expectedValue string
+	}{
+		{"TestPositiveGetEnv", "Test", "test1", "test2", "test2"},
+		{"TestEmptyGetEnv", "", "localhost", "", "localhost"},
 	}
-}
 
-func TestPositiveSanitizeLogMessageMultiple(t *testing.T) {
-	userInput := "5ca9dba"
-	log := fmt.Sprintf("This is a log line with a cache key: %s", userInput)
-	expected := "This is a log line with a cache key: 5ca****. Cache key: 5ca****"
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.inputKey != "" {
+				err := os.Setenv(tc.inputKey, tc.inputValue)
 
-	ans := SanitizeLogMessage(log, userInput)
+				if err != nil {
+					t.Errorf("error setting environment variable: %s", err)
+				}
 
-	if ans != expected {
-		t.Errorf("The sanitize log message does not match. The response was: %s", ans)
-	}
-}
-
-func TestPositiveSanitizeLogMessageShortKey(t *testing.T) {
-	userInput := "5c"
-	log := fmt.Sprintf("This is a log line with a cache key: %s", userInput)
-	expected := fmt.Sprintf("This is a log line with a cache key: %s****", userInput)
-
-	ans := SanitizeLogMessage(log, userInput)
-
-	if ans != expected {
-		t.Errorf("The sanitize log message does not match. The response was: %s", ans)
-	}
-}
-
-func TestPositiveSanitizeLogMessageEmpty(t *testing.T) {
-	userInput := ""
-	log := fmt.Sprintf("This is a log line with a cache key: %s", userInput)
-	expected := fmt.Sprintf("This is a log line with a cache key: %s****", userInput)
-
-	ans := SanitizeLogMessage(log, userInput)
-
-	if ans != expected {
-		t.Errorf("The sanitize log message does not match. The response was: %s", ans)
+				ans := GetEnv(tc.inputKey, tc.inputDefault)
+				assert.Equal(t, tc.expectedValue, ans, "the environment variable values should match.")
+			}
+		})
 	}
 }
