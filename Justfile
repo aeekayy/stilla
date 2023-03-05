@@ -23,6 +23,6 @@ setup:
 	curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v{{protoc_ver}}/{{protoc_zip}}
 	unzip -o {{protoc_zip}} -d /usr/local bin/protoc
 	unzip -o {{protoc_zip}} -d /usr/local 'include/*'
-	rm -f $PROTOC_ZIP
+	rm -f {{protoc_zip}}
 	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
