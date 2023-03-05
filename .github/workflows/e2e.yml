@@ -30,6 +30,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 5432:5432
       # Label used to access the service container
       mongo:
         # Docker Hub image
@@ -39,6 +41,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 27017:27017
       redis:
         # Docker Hub image
         image: redis
@@ -48,6 +52,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
       # Downloads a copy of the code in your repository before running CI tests
