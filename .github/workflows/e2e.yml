@@ -54,14 +54,17 @@ jobs:
       - name: Check out repository code
         uses: actions/checkout@v3
 
-      - name: Install Protoc
-        uses: arduino/setup-protoc@v1
-        with:
-          version: '3.x'
+      - name: Setup Just
+        uses: extractions/setup-just@v1
+
+      - name: Setup Dependencies
+        run: |
+          just setup
 
       - name: Build Stilla
         run: |
-          make build
+          just build
+          just migrate
         env:
           GITHUB_PATH: ${GITHUB_PATH}:${GOPATH}/bin
 
