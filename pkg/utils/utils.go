@@ -48,14 +48,17 @@ func SanitizeLogMessage(log, userInput string) string {
 		return log
 	}
 
-	cleanUserInput := userInput + "****"
+	cleanUserInput := "****"
 	if len(userInput) > 3 {
 		cleanUserInput = userInput[0:3] + "****"
-	} else {
-		cleanUserInput = "****"
 	}
+
 	//fullLog := fmt.Sprintf(log, userInput)
-	return strings.Replace(log, userInput, cleanUserInput, -1)
+	cleanLog := strings.Replace(log, userInput, cleanUserInput, -1)
+	cleanLog := strings.Replace(cleanLog, "\n", "", -1)
+	cleanLog = strings.Replace(cleanLog, "\r", "", -1)
+
+	return cleanLog
 }
 
 // GetEnv get key environment variable if exist otherwise return defalutValue
