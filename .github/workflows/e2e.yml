@@ -82,6 +82,8 @@ jobs:
           just migrate
         env:
           GITHUB_PATH: ${GITHUB_PATH}:${GOPATH}/bin
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: 5432
 
       - name: Run Stilla
         run: ./stilla
