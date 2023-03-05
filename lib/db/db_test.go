@@ -140,6 +140,43 @@ func TestSuiteAllQueries(t *testing.T) {
 	}
 }
 
+// BenchmarkAllQueries get performance benchmarks for all queries
+func BenchmarkAllQueries(b *testing.B) {
+	pgpool, teardownSuite, err := setupDB(b)
+	defer teardownSuite(b, pgpool)
+
+	if err != nil {
+		b.Errorf("could not create database pool")
+	}
+
+	if pgpool == nil {
+		b.Errorf("expected a database connection")
+	}
+
+	table := []struct {
+		name          string
+		inputName     string
+		inputTags     []string
+		errorExpected bool
+		checkKey      bool
+	}{
+		{"GenerateAPIKey", "test", []string{"test1", "test2"}, false, false},
+	}
+
+	for _, bc := range table {
+		keyName := bc.inputName
+		if keyName == "{RANDOM}" {
+			keyName = randstring(10)
+		}
+
+		b.Run(bc.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				pgpool.GenerateAPIKey(keyName, bc.inputTags)
+			}
+		})
+	}
+}
+
 func stringWithCharset(length int, charset string) string {
 	b := make([]byte, length)
 	for i := range b {

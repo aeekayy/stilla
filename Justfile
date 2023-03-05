@@ -39,4 +39,9 @@ fmt:
 test:
 	go test -v ./...
 
-prepare-commit: lint fmt test
+performance:
+	pushd lib/db
+	go test -bench=.
+	popd
+
+prepare-commit: lint fmt test performance
