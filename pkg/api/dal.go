@@ -174,7 +174,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	// the $where function is not support on the Atlas free tier
 	// https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/?_ga=2.189348331.1715576176.1677375251-1973124898.1674435602
 	filter := bson.D{
-		{Key: "config_name", Value: sanitizedConfigName},
+		{Key: "config_name", Value: fmt.Sprintf("%s", sanitizedConfigName)},
 	}
 	// see if there's an existing record
 	err := configCol.FindOne(
