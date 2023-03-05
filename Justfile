@@ -1,4 +1,5 @@
 name := "stilla"
+cwd := `pwd`
 api_spec := "api/openapi.yaml"
 api_path := "./pkg/api"
 svc_db := trim(`psql "postgresql://postgres:postgres@${POSTGRES_HOST:-localhost}:5432/postgres" -c "select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('stilla'));" -t`)
@@ -42,8 +43,7 @@ unit-test:
 test: unit-test
 
 performance:
-	pushd lib/db
-	go test -bench=.
-	popd
+	cd {{cwd}}/lib/db && go test -bench=.
+	cd {{cwd}}
 
 prepare-commit: lint fmt unit-test performance

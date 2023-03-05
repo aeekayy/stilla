@@ -3,8 +3,8 @@ package models
 import (
 	"testing"
 
-	"go.mongodb.org/mongo-driver/bson"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func TestIngestPositive(t *testing.T) {
@@ -41,7 +41,7 @@ func TestIngestPositive(t *testing.T) {
 	assert.Equal(t, cr.CreatedBy, "aeekayy", "the two authors should be the same.")
 }
 
-func TestIngestNegative(t *testing.T) {
+func TestIngestNil(t *testing.T) {
 	var cr ConfigResponse
 
 	err := cr.Ingest(nil)

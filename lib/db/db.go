@@ -4,6 +4,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
@@ -113,9 +114,21 @@ func (d *Conn) GetAPIKey(keyID string) (APIKey, error) {
 
 	err := d.Pool.QueryRow(*dbCtx, "SELECT id, name, role, created, updated FROM api_keys WHERE id=$1;", keyID).Scan(&apiID, &apiName, &apiRoleID, &apiCreated, &apiUpdated)
 
-	apiKey.ID = uuid.MustParse(apiID)
+	if err != nil {
+		return apiKey, err
+	}
+
+	apiKey.ID, err = uuid.Parse(apiID)
+	if err != nil {
+		return apiKey, err
+	}
+
+	apiKey.Role, err = uuid.Parse(apiRoleID)
+	if err != nil {
+		return apiKey, err
+	}
+
 	apiKey.Name = apiName
-	apiKey.Role = uuid.MustParse(apiRoleID)
 	apiKey.Created = apiCreated
 	apiKey.Updated = apiUpdated
 
@@ -155,7 +168,7 @@ func isValidName(name string) bool {
 		return false
 	}
 
-	if slices.Contains(apiKeyNameBlacklist, name) {
+	if slices.Contains(apiKeyNameBlacklist, strings.ToLower(name)) {
 		return false
 	}
 

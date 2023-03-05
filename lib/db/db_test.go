@@ -101,30 +101,41 @@ func TestSuiteAllQueries(t *testing.T) {
 	}
 
 	table := []struct {
-		name          string
-		inputName     string
-		inputTags     []string
-		errorExpected bool
-		checkKey      bool
+		name                   string
+		inputName              string
+		inputTags              []string
+		errorExpected          bool
+		skipGenerateAPIKey     bool
+		checkKey               bool
+		checkGetAPIKey         bool
+		getAPIKeyErrorExpected bool
 	}{
-		{"GenerateAPIKeyPass", "test", []string{"test1", "test2"}, false, false},
-		{"GenerateAPIKeyFailEmptyName", "", []string{"test1", "test2"}, true, false},
-		{"GenerateAPIKeyFailApiKey", "apikey", []string{"test1", "test2"}, true, false},
-		{"GenerateAPIKeyFailName", "name", []string{"test1", "test2"}, true, false},
-		{"GenerateAPIKeyPass", "test", []string{"test1", "test2"}, false, false},
-		{"GenerateAPIKeyRandom", "{RANDOM}", []string{"random1"}, false, true},
+		{"GenerateAPIKeyPass", "test", []string{"test1", "test2"}, false, false, false, true, false},
+		{"GenerateAPIKeyFailEmptyName", "", []string{"test1", "test2"}, true, false, false, false, false},
+		{"GenerateAPIKeyFailApiKey", "apikey", []string{"test1", "test2"}, true, false, false, false, false},
+		{"GenerateAPIKeyFailName", "name", []string{"test1", "test2"}, true, false, false, false, false},
+		{"GenerateAPIKeyPass", "test", []string{"test1", "test2"}, false, false, false, true, false},
+		{"GenerateAPIKeyRandom", "{RANDOM}", []string{"random1"}, false, false, true, true, false},
+		{"GenerateAPIKeyRandom", "{RANDOM}", []string{"random1"}, false, false, true, true, false},
+		{"GetAPIKeyFail", "foobarbar", []string{"failwhale"}, false, true, false, true, true},
 	}
 
 	for _, tc := range table {
 		t.Run(tc.name, func(t *testing.T) {
-			keyName := tc.inputName
-			if keyName == "{RANDOM}" {
-				keyName = randstring(10)
-			}
-			key, err := pgpool.GenerateAPIKey(keyName, tc.inputTags)
+			var keyName string
+			var key string
 
-			if (err != nil) != tc.errorExpected {
-				t.Errorf("expected %t, got the error %+v", tc.errorExpected, err)
+			if !tc.skipGenerateAPIKey {
+				keyName = tc.inputName
+				if keyName == "{RANDOM}" {
+					keyName = randstring(10)
+				}
+				key, err = pgpool.GenerateAPIKey(keyName, tc.inputTags)
+
+				if (err != nil) != tc.errorExpected {
+					t.Errorf("expected %t, got the error %+v", tc.errorExpected, err)
+				}
+
 			}
 
 			if tc.checkKey {
@@ -135,6 +146,18 @@ func TestSuiteAllQueries(t *testing.T) {
 				}
 
 				assert.Equal(t, name, keyName, "the two names of the api key should be the same.")
+			}
+
+			if tc.checkGetAPIKey {
+				// retrieve the api key
+				apiKey, err := pgpool.GetAPIKey(key)
+
+				// nil != nil false != true
+				if (err != nil) != tc.getAPIKeyErrorExpected {
+					t.Errorf("error retrieving the api key: %v", apiKey)
+				}
+
+				assert.Equal(t, keyName, apiKey.Name, "the name of the api keys should match")
 			}
 		})
 	}
@@ -173,6 +196,28 @@ func BenchmarkAllQueries(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				pgpool.GenerateAPIKey(keyName, bc.inputTags)
 			}
+		})
+	}
+}
+
+// TestSuiteIsValidName
+func TestSuiteIsValidName(t *testing.T) {
+	table := []struct {
+		name     string
+		input    string
+		expected bool
+	}{
+		{"IsValidNameEmpty", "", false},
+		{"IsValidNameAoiKey", "apikey", false},
+		{"IsValidNameAoiKeyUppercase", "APIKey", false},
+		{"IsValidNamePass", "machine1", true},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			ans := isValidName(tc.input)
+
+			assert.Equal(t, ans, tc.expected, "the output and expected value of isValidName should be the same.")
 		})
 	}
 }

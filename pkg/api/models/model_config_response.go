@@ -95,7 +95,7 @@ func (c *Checksum) SetBSON(raw bson.Raw) error {
 	return nil
 }
 
-// Ingest {"data":{"_id":"638b0a89e7693d00937122ef","config":{"checksum":{"Subtype":0,"Data":"foaNr/amVrF/tnClaVX7bHcCCX8nUY9fBzW/2pmnopo="},"config":{"url":"https://backstage.aeekay.co"},"config_name":"backstage","created":"2022-12-03T08:36:24.972Z","created_by":"aeekayy"},"config_name":"backstage","config_version":"638b0a88e7693d00937122ee","created":"2022-12-03T08:36:24.972Z","created_by":"aeekayy","modified":"2022-12-03T08:36:24.972Z","parents":null}}
+// Ingest ingest data from a BSON map
 func (cr *ConfigResponse) Ingest(b *bson.M) error {
 	m, err := bson.Marshal(b)
 
