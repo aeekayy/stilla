@@ -1,0 +1,94 @@
+name: Stilla End to End Tests
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '30 1 * * 0'
+
+jobs:
+  # Label of the container job
+  container-job:
+    # Containers must run in Linux based operating systems
+    runs-on: ubuntu-latest
+    # Docker Hub image that `container-job` executes in
+    container: golang:1.20
+
+    # Service containers to run with `container-job`
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres
+        # Provide the password for postgres
+        env:
+          POSTGRES_PASSWORD: postgres
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      # Label used to access the service container
+      mongo:
+        # Docker Hub image
+        image: mongo
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+      redis:
+        # Docker Hub image
+        image: redis
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      # Downloads a copy of the code in your repository before running CI tests
+      - name: Check out repository code
+        uses: actions/checkout@v3
+
+      - name: Setup Tools
+        run: |
+          apt update -y
+          apt install -y postgresql-client unzip
+
+      - name: Setup Just
+        uses: extractions/setup-just@v1
+
+      - name: Setup Dependencies
+        run: |
+          just setup
+        env:
+          # The hostname used to communicate with the PostgreSQL service container
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: 5432
+          CI: true
+
+      - name: Build Stilla
+        run: |
+          just build
+          just migrate
+        env:
+          GITHUB_PATH: ${GITHUB_PATH}:${GOPATH}/bin
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: 5432
+
+      - name: Test Stilla
+        run: |
+          just test
+        env:
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: 5432
