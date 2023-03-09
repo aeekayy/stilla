@@ -18,6 +18,8 @@ import (
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/newrelic/go-agent/v3/integrations/nrgin"
+
+	"github.com/aeekayy/stilla/pkg/utils"
 )
 
 const hostKey = "host"
@@ -241,12 +243,14 @@ func extractToken(c *gin.Context) (string, bool) {
 func AuthRequired(d *DAL) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		var host interface{}
+		d.Logger.Info("Checking authorization")
 		token, ok := extractToken(c)
 		if ok {
 			// check for the token's validity
 			host, ok, _ = ValidateToken(d, token)
 			c.Set("x-host-id", token)
 			if !ok {
+				d.Logger.Infof("Auth failed for %s", utils.ObfuscateValue(token, 8))
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 			}
 		} else {
@@ -261,7 +265,6 @@ func AuthRequired(d *DAL) gin.HandlerFunc {
 		// set the context
 		c.Set("x-host", host)
 
-		// Continue down the chain to handler etc
 		c.Next()
 	}
 

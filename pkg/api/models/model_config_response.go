@@ -48,6 +48,7 @@ type Config struct {
 // RawChecksum ...
 type RawChecksum struct {
 	Data Checksum `json:"Data" bson:"Data"`
+	Subtype string `json:"Subtype" bson:"Subtype"`
 }
 
 // UnmarshalJSON ...

@@ -65,6 +65,43 @@ func SanitizeLogMessage(log string, input ...string) string {
 	return cleanLog
 }
 
+// SanitizeErrorMessage removes user input from the err output
+func SanitizeErrorMessage(log error, input ...string) error {
+	cleanLog := log.Error()
+
+	for _, v := range input {
+		if v == "" {
+			return log
+		}
+
+		cleanUserInput := "****"
+		if len(v) > 3 {
+			cleanUserInput = v[0:3] + "****"
+		}
+
+		//fullLog := fmt.Sprintf(log, userInput)
+		cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
+	}
+	cleanLog = strings.Replace(cleanLog, "\n", "", -1)
+	cleanLog = strings.Replace(cleanLog, "\r", "", -1)
+
+	return fmt.Errorf("%s", cleanLog)
+}
+
+// ObfuscateValue obfuscate the string
+func ObfuscateValue(input string, char int) string {
+	if input == "" || char < 0{
+		return input
+	}
+
+	cleanUserInput := "****"
+	if len(input) > 3 {
+		cleanUserInput = input[0:char] + "****"
+	}
+
+	return cleanUserInput
+}
+
 // GetEnv get key environment variable if exist otherwise return defalutValue
 func GetEnv(key, defaultValue string) string {
 	value := os.Getenv(key)

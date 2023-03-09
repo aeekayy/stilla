@@ -31,7 +31,8 @@ import (
 )
 
 const (
-	configDB                = "config_db"
+	// TODO move this to configuration
+	configDB                = "configdb"
 	configCollection        = "config"
 	configVersionCollection = "config_version"
 	serviceName             = "stilla"
@@ -164,7 +165,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	// and Database.Collection method
 	d.EmitMessage("config.audit", "InsertConfig", requestDetails)
 
-	configCol := d.DocumentStore.Database(configDB).Collection(configCollection)
+	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
 	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
 
 	var result bson.M
@@ -177,7 +178,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 		{Key: "config_name", Value: fmt.Sprintf("%s", sanitizedConfigName)},
 	}
 	// see if there's an existing record
-	err := configCol.FindOne(
+	err := configCollection.FindOne(
 		ctx,
 		filter,
 	).Decode(&result)
@@ -224,7 +225,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 
 	// InsertOne accept two argument of type Context
 	// and of empty interface
-	configResp, err := configCol.InsertOne(ctx, configAdd)
+	configResp, err := configCollection.InsertOne(ctx, configAdd)
 	if err != nil {
 		d.Logger.Errorf("unable to insert config: %v", err)
 		return nil, fmt.Errorf("unable to insert config: %s", err)
@@ -260,7 +261,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
 	err := d.Cache.Get(cacheKey, &respEnc)
 
-	configCol := d.DocumentStore.Database(configDB).Collection(configCollection)
+	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
 	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
 
 	if err == nil {
@@ -285,47 +286,42 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	var result bson.M
 	var metadataKey string
 	var metadataFilter bson.M
-	var objID primitive.ObjectID
+	var queryFilter []bson.M
 
 	if primitive.IsValidObjectID(configID) {
 		metadataKey = "_id"
-		objID, err = primitive.ObjectIDFromHex(configID)
+		objID, err := primitive.ObjectIDFromHex(configID)
 
 		if err != nil {
 			return nil, fmt.Errorf("error setting objectid: %s, %s", configID, err)
 		}
-
 		metadataFilter = bson.M{"$eq": objID}
+		queryFilter = append(queryFilter, bson.M{metadataKey: metadataFilter})
 	} else {
 		metadataKey = "config_name"
 		metadataFilter = bson.M{"$eq": configID}
+		queryFilter = append(queryFilter, bson.M{metadataKey: metadataFilter})
 	}
 
-	// see if there's an existing record
-	var searchFilter bson.D
 	if hostID != "" {
-		searchFilter = bson.D{
-			{metadataKey, metadataFilter},
-			{"host", bson.M{"$eq": hostID}},
-		}
-	} else {
-		searchFilter = bson.D{
-			{metadataKey, metadataFilter},
-		}
-	}
-	err = configCol.FindOne(
+		queryFilter = append(queryFilter, bson.M{"host": bson.M{"$eq": hostID}})
+	} 
+
+	d.Logger.Infof("config search filter: %v", bson.D{{"$and", queryFilter}})
+
+	err = configCollection.FindOne(
 		ctx,
-		searchFilter,
+		bson.D{{"$and", queryFilter}},
 	).Decode(&result)
 
 	if err != nil {
 		// ErrNoDocuments means that the filter did not match any documents in
 		// the collection.
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("the document does not exist: %s", err)
+			return nil, fmt.Errorf("the config document does not exist: %s", err)
 		}
 
-		return nil, fmt.Errorf("error accessing the document: %s", err)
+		return nil, fmt.Errorf("error accessing the config document: %s", err)
 	}
 
 	var versionResult bson.M
@@ -333,17 +329,18 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	err = configVersionCol.FindOne(
 		ctx,
 		bson.D{{"_id", bson.M{"$eq": result["config_version"]}}},
-		options.FindOne().SetProjection(bson.M{"_id": 0, "checksum.Subtype": 0}),
+		options.FindOne().SetProjection(bson.M{"_id": 0, "config": 1, "created_by": 1, "created": 1, "checksum": 1}),
 	).Decode(&versionResult)
 
 	var configResponse models.ConfigResponse
+	// TODO fix the response. The config version is empty
 	configResponse.Ingest(&versionResult)
 
 	if err != nil {
 		// ErrNoDocuments means that the filter did not match any documents in
 		// the collection.
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("the document does not exist: %s", err)
+			return nil, fmt.Errorf("the config version document does not exist: %s", err)
 		}
 
 		return nil, fmt.Errorf("error accessing the document: %s", err)
@@ -384,7 +381,7 @@ func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req inte
 
 	d.EmitMessage("config.audit", "GetConfigs", requestDetails)
 
-	configCol := d.DocumentStore.Database(configDB).Collection(configCollection)
+	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
 
 	if limit == "" {
 		limit = "100"
@@ -414,7 +411,7 @@ func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req inte
 	var results []models.ConfigStore
 
 	// see if there's an existing record
-	cursor, err := configCol.Find(
+	cursor, err := configCollection.Find(
 		ctx,
 		bson.D{{}},
 	)
@@ -449,7 +446,7 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 	// select database and collection ith Client.Database method
 	// and Database.Collection method
 	d.EmitMessage("config.audit", "UpdateConfigByID", requestDetails)
-	configCol := d.DocumentStore.Database(configDB).Collection(configCollection)
+	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
 	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
 
 	var existingConfig bson.M
@@ -459,7 +456,7 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 		{Key: "_id", Value: sanitizedConfigID},
 	}
 	// see if there's an existing record
-	err := configCol.FindOne(
+	err := configCollection.FindOne(
 		ctx,
 		filter,
 	).Decode(&existingConfig)
@@ -507,7 +504,7 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 	}
 	// FindOneAndUpdate accept two argument of type Context
 	// and of empty interface
-	configResp := configCol.FindOneAndUpdate(ctx, mapFilter, update, &opt)
+	configResp := configCollection.FindOneAndUpdate(ctx, mapFilter, update, &opt)
 
 	d.Logger.Infof("updated config object %s", configResp)
 	return configResp, nil
