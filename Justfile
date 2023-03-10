@@ -50,6 +50,7 @@ load-test:
 	locust -f tests/locustfile.py --headless -u 100 -r 3 --host http://localhost:8080 -t 300s
 
 run: build
+	cp stilla.gh.yaml stilla.yaml
 	./stilla & 
 	SVC_PID=$!
 	echo "$SVC_PID" > stilla.pid
