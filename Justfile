@@ -46,4 +46,7 @@ performance:
 	cd {{cwd}}/lib/db && go test -bench=.
 	cd {{cwd}}
 
+load-test:
+	locust -f tests/locustfile.py --headless -u 100 -r 3 --host http://localhost:8080 -t 300s
+
 prepare-commit: lint fmt unit-test performance

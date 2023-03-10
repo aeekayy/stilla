@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -39,6 +40,12 @@ const (
 	serviceName                    = "stilla"
 	dateFormat                     = "2021-02-03T04:55:46.607+08:00"
 )
+
+// MongoQueryResult
+type MongoQueryResult struct {
+	Result interface{} `json:"result"`
+	Error  error       `json:"error"`
+}
 
 // DAL Data Access Layer struct for maintaining and managing
 // data store connections for Stilla
@@ -199,6 +206,9 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	var configID string
 	var version int32
 	var created time.Time
+	var wg sync.WaitGroup
+	chConfigVersion := make(chan MongoQueryResult)
+	chConfig := make(chan MongoQueryResult)
 
 	if version = 1; result != nil {
 		checkVersion := result["version"]
@@ -243,25 +253,58 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 		{"version", version},
 	}
 
-	// create a new configVersion
-	configVersion, err := configVersionCollection.InsertOne(ctx, configAdd)
-	if err != nil {
-		d.Logger.Errorf("unable to insert configVersion: %v", err)
-		return "", fmt.Errorf("unable to ingest configVersion object: %s", err)
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		d.Logger.Info("Got here 2")
+		// create a new configVersion
+		configVersion, err := configVersionCollection.InsertOne(ctx, configAdd)
+
+		qr := MongoQueryResult{
+			Result: configVersion,
+			Error:  err,
+		}
+		d.Logger.Info("Got here 3")
+		chConfigVersion <- qr
+		d.Logger.Info("Got here 5")
+	}()
+
+	go func() {
+		defer wg.Done()
+		// UpdateOne accept two argument of type Context
+		// and of empty interface
+		d.Logger.Info("Got here 1")
+		updateDoc := bson.D{{"$set", configAdd}}
+		config, err := configCollection.UpdateOne(ctx, filter, updateDoc, opts)
+
+		qr := MongoQueryResult{
+			Result: config,
+			Error:  err,
+		}
+
+		d.Logger.Info("Got here 4")
+		chConfig <- qr
+		d.Logger.Info("Got here 6")
+	}()
+
+	qrConfigVersion := <-chConfigVersion
+
+	if qrConfigVersion.Error != nil {
+		d.Logger.Errorf("unable to insert configVersion: %v", qrConfigVersion.Error)
+		return "", fmt.Errorf("unable to ingest configVersion object: %s", qrConfigVersion.Error)
 	}
 
-	d.Logger.Infof("Inserted configVersion %v", configVersion.InsertedID)
+	qrConfig := <-chConfig
 
-	// InsertOne accept two argument of type Context
-	// and of empty interface
-	updateDoc := bson.D{{"$set", configAdd}}
-	_, err = configCollection.UpdateOne(ctx, filter, updateDoc, opts)
-	if err != nil {
-		d.Logger.Errorf("unable to insert config: %v", err)
-		return "", fmt.Errorf("unable to insert config: %s", err)
+	if qrConfig.Error != nil {
+		d.Logger.Errorf("unable to insert config: %v", qrConfig.Error)
+		return "", fmt.Errorf("unable to insert config: %s", qrConfig.Error)
 	}
 
-	d.Logger.Infof("created config object %s", configID)
+	d.Logger.Infof("inserted configVersion %s", configID)
+	d.Logger.Infof("inserted config object %s", configID)
+
 	return configID, nil
 }
 
