@@ -73,6 +73,7 @@ table "audit" {
     columns = [column.id]
   }
 }
+
 table "roles" {
   schema = schema.public
   column "id" {
