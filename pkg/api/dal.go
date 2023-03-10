@@ -15,6 +15,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/newrelic/go-agent/v3/newrelic"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -32,10 +33,11 @@ import (
 
 const (
 	// TODO move this to configuration
-	configDB                = "configdb"
-	configCollection        = "config"
-	configVersionCollection = "config_version"
-	serviceName             = "stilla"
+	configDB                       = "configdb"
+	configCollection               = "config"
+	configVersionCollectionlection = "config_version"
+	serviceName                    = "stilla"
+	dateFormat                     = "2021-02-03T04:55:46.607+08:00"
 )
 
 // DAL Data Access Layer struct for maintaining and managing
@@ -146,7 +148,7 @@ func (d *DAL) LoginHost(ctx *gin.Context, hostLoginIn models.HostLoginIn, req in
 // InsertConfig insert a configuration object into the document store. This
 // creates a new ConfigVersion object. The ObjectID of the ConfigVersion is then
 // used to update the Config object reference for ConfigVersion
-func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (interface{}, error) {
+func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (string, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -166,7 +168,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	d.EmitMessage("config.audit", "InsertConfig", requestDetails)
 
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
-	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
+	configVersionCollection := d.DocumentStore.Database(configDB).Collection(configVersionCollectionlection)
 
 	var result bson.M
 
@@ -177,6 +179,9 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	filter := bson.D{
 		{Key: "config_name", Value: fmt.Sprintf("%s", sanitizedConfigName)},
 	}
+
+	opts := options.Update().SetUpsert(true)
+
 	// see if there's an existing record
 	err := configCollection.FindOne(
 		ctx,
@@ -187,57 +192,83 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 		// ErrNoDocuments means that the filter did not match any documents in
 		// the collection.
 		if err != mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("error accessing the collection: %s", err)
+			return "", fmt.Errorf("error accessing the collection: %s", err)
 		}
-	} else {
-		return nil, fmt.Errorf("the document exists")
 	}
 
-	created := time.Now()
+	var configID string
+	var version int32
+	var created time.Time
+
+	if version = 1; result != nil {
+		checkVersion := result["version"]
+		if checkVersion != nil {
+			version = checkVersion.(int32) + 1
+		}
+
+		checkConfigID := result["config_id"]
+
+		if checkConfigID != nil {
+			configID = checkConfigID.(string)
+		}
+
+		checkCreated := result["created"]
+
+		if checkCreated != nil {
+			created = checkCreated.(primitive.DateTime).Time()
+		}
+	}
+
+	if configID == "" {
+		configID = uuid.NewString()
+	}
+
 	updated := time.Now()
 	checksum := sha256.Sum256([]byte(fmt.Sprintf("%s:%s+%s:%s", configIn.ConfigName, configIn.Owner, created.String(), updated.String())))
 
 	configVersionIn := bson.D{
 		{"config", configIn.Config},
-		{"config_name", configIn.ConfigName},
-		{"checksum", checksum},
-		{"created_by", configIn.Owner},
-		{"created", created},
+		{"checksum", fmt.Sprintf("%x", checksum)},
 	}
-	// create a new configVersion
-	configVersion, err := configVersionCol.InsertOne(ctx, configVersionIn)
-	if err != nil {
-		d.Logger.Errorf("unable to insert configVersion: %v", err)
-		return nil, fmt.Errorf("unable to ingest configVersion object: %s", err)
-	}
-
-	d.Logger.Infof("Inserted configVersion %v", configVersion.InsertedID)
 
 	configAdd := bson.D{
 		{"config_name", configIn.ConfigName},
 		{"created_by", configIn.Owner},
-		{"config_version", configVersion.InsertedID},
+		{"config", configVersionIn},
+		{"config_id", configID},
 		{"host", hostID},
 		{"parents", configIn.Parents},
 		{"created", created},
 		{"modified", updated},
+		{"version", version},
 	}
+
+	// create a new configVersion
+	configVersion, err := configVersionCollection.InsertOne(ctx, configAdd)
+	if err != nil {
+		d.Logger.Errorf("unable to insert configVersion: %v", err)
+		return "", fmt.Errorf("unable to ingest configVersion object: %s", err)
+	}
+
+	d.Logger.Infof("Inserted configVersion %v", configVersion.InsertedID)
 
 	// InsertOne accept two argument of type Context
 	// and of empty interface
-	configResp, err := configCollection.InsertOne(ctx, configAdd)
+	updateDoc := bson.D{{"$set", configAdd}}
+	_, err = configCollection.UpdateOne(ctx, filter, updateDoc, opts)
 	if err != nil {
 		d.Logger.Errorf("unable to insert config: %v", err)
-		return nil, fmt.Errorf("unable to insert config: %s", err)
+		return "", fmt.Errorf("unable to insert config: %s", err)
 	}
 
-	d.Logger.Infof("created config object %s", configResp.InsertedID)
-	return configResp.InsertedID, nil
+	d.Logger.Infof("created config object %s", configID)
+	return configID, nil
 }
 
 // GetConfig returns a Config with the latest version of the ConfigVersion
-func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req interface{}) (bson.M, error) {
+func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req interface{}) (models.ConfigResponse, error) {
 	requestDetails := make(map[string]interface{})
+	var configResponse models.ConfigResponse
 
 	httpReq := req.(*http.Request)
 	requestDetails["request.method"] = utils.SanitizeMessageValue(httpReq.Method)
@@ -262,25 +293,26 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	err := d.Cache.Get(cacheKey, &respEnc)
 
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
-	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
+	configVersionCollection := d.DocumentStore.Database(configDB).Collection(configVersionCollectionlection)
 
 	if err == nil {
 		bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
 		if err != nil {
 			d.Logger.Errorf("unable to retrieve config: %v", err)
-			return nil, fmt.Errorf("unable to retrieve config: %v", err)
+			return configResponse, fmt.Errorf("unable to retrieve config: %v", err)
 		}
 		err = bson.Unmarshal(bsonBin, &resp)
 		if err != nil {
 			d.Logger.Errorf("unable to retrieve config: %v", err)
-			return nil, fmt.Errorf("unable to retrieve config: %v", err)
+			return configResponse, fmt.Errorf("unable to retrieve config: %v", err)
 		}
-		logLine := utils.SanitizeLogMessage("cache hit for %s", cacheKey)
-		d.Logger.Infof(logLine)
-		return resp, nil
+		logLine := utils.SanitizeLogMessageF("cache hit for %s", cacheKey)
+		d.Logger.Info(logLine)
+		configResponse.Ingest(&resp)
+		return configResponse, nil
 	} else if err != persistence.ErrCacheMiss {
 		d.Logger.Errorf("unable to retrieve config: %v", err)
-		return nil, fmt.Errorf("unable to retrieve config: %v", err)
+		return configResponse, fmt.Errorf("unable to retrieve config: %v", err)
 	}
 
 	var result bson.M
@@ -293,7 +325,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 		objID, err := primitive.ObjectIDFromHex(configID)
 
 		if err != nil {
-			return nil, fmt.Errorf("error setting objectid: %s, %s", configID, err)
+			return configResponse, fmt.Errorf("error setting objectid: %s, %s", configID, err)
 		}
 		metadataFilter = bson.M{"$eq": objID}
 		queryFilter = append(queryFilter, bson.M{metadataKey: metadataFilter})
@@ -305,9 +337,9 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 
 	if hostID != "" {
 		queryFilter = append(queryFilter, bson.M{"host": bson.M{"$eq": hostID}})
-	} 
+	}
 
-	d.Logger.Infof("config search filter: %v", bson.D{{"$and", queryFilter}})
+	d.Logger.Debugf("config search filter: %v", bson.D{{"$and", queryFilter}})
 
 	err = configCollection.FindOne(
 		ctx,
@@ -318,32 +350,31 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 		// ErrNoDocuments means that the filter did not match any documents in
 		// the collection.
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("the config document does not exist: %s", err)
+			return configResponse, fmt.Errorf("the config document does not exist: %s", err)
 		}
 
-		return nil, fmt.Errorf("error accessing the config document: %s", err)
+		return configResponse, fmt.Errorf("error accessing the config document: %s", err)
 	}
 
 	var versionResult bson.M
 
-	err = configVersionCol.FindOne(
+	err = configVersionCollection.FindOne(
 		ctx,
 		bson.D{{"_id", bson.M{"$eq": result["config_version"]}}},
 		options.FindOne().SetProjection(bson.M{"_id": 0, "config": 1, "created_by": 1, "created": 1, "checksum": 1}),
 	).Decode(&versionResult)
 
-	var configResponse models.ConfigResponse
 	// TODO fix the response. The config version is empty
-	configResponse.Ingest(&versionResult)
+	configResponse.Ingest(&result)
 
 	if err != nil {
 		// ErrNoDocuments means that the filter did not match any documents in
 		// the collection.
 		if err == mongo.ErrNoDocuments {
-			return nil, fmt.Errorf("the config version document does not exist: %s", err)
+			return configResponse, fmt.Errorf("the config version document does not exist: %s", err)
 		}
 
-		return nil, fmt.Errorf("error accessing the document: %s", err)
+		return configResponse, fmt.Errorf("error accessing the document: %s", err)
 	}
 
 	result["config"] = configResponse
@@ -352,16 +383,16 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	bsonBin, err := bson.Marshal(result)
 	if err != nil {
 		d.Logger.Errorf("error writing to cache: %v", err)
-		return result, fmt.Errorf("error writing to the cache %s", err)
+		return configResponse, fmt.Errorf("error writing to the cache %s", err)
 	}
 	cacheEnc := b64.StdEncoding.EncodeToString(bsonBin)
 	err = d.Cache.Set(cacheKey, cacheEnc, time.Hour)
 	if err != nil {
 		d.Logger.Errorf("error writing to cache: %v", err)
-		return result, fmt.Errorf("error writing to the cache %s", err)
+		return configResponse, fmt.Errorf("error writing to the cache %s", err)
 	}
 
-	return result, nil
+	return configResponse, nil
 }
 
 // GetConfigs returns a paginated slice of Configs from the document store
@@ -447,7 +478,7 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 	// and Database.Collection method
 	d.EmitMessage("config.audit", "UpdateConfigByID", requestDetails)
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
-	configVersionCol := d.DocumentStore.Database(configDB).Collection(configVersionCollection)
+	configVersionCollection := d.DocumentStore.Database(configDB).Collection(configVersionCollectionlection)
 
 	var existingConfig bson.M
 
@@ -481,7 +512,7 @@ func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn
 		{"created", created},
 	}
 	// create a new configVersion
-	configVersion, err := configVersionCol.InsertOne(ctx, configVersionIn)
+	configVersion, err := configVersionCollection.InsertOne(ctx, configVersionIn)
 	if err != nil {
 		d.Logger.Errorf("unable to insert config_version: %v", err)
 		return nil, fmt.Errorf("unable to ingest config_version object: %s", err)

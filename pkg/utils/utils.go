@@ -65,6 +65,31 @@ func SanitizeLogMessage(log string, input ...string) string {
 	return cleanLog
 }
 
+// SanitizeLogMessageF removes user input from the log output and format
+func SanitizeLogMessageF(log string, input ...string) string {
+	cleanLog := log
+
+	for _, v := range input {
+		cleanLog := fmt.Sprintf(log, v)
+
+		if v == "" {
+			return log
+		}
+
+		cleanUserInput := "****"
+		if len(v) > 3 {
+			cleanUserInput = v[0:3] + "****"
+		}
+
+		//fullLog := fmt.Sprintf(log, userInput)
+		cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
+	}
+	cleanLog = strings.Replace(cleanLog, "\n", "", -1)
+	cleanLog = strings.Replace(cleanLog, "\r", "", -1)
+
+	return cleanLog
+}
+
 // SanitizeErrorMessage removes user input from the err output
 func SanitizeErrorMessage(log error, input ...string) error {
 	cleanLog := log.Error()
@@ -90,7 +115,7 @@ func SanitizeErrorMessage(log error, input ...string) error {
 
 // ObfuscateValue obfuscate the string
 func ObfuscateValue(input string, char int) string {
-	if input == "" || char < 0{
+	if input == "" || char < 0 {
 		return input
 	}
 

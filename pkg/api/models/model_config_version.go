@@ -10,18 +10,11 @@
 
 package models
 
-import (
-	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+// Checksum ...
+type Checksum string
 
 // ConfigVersion ...
 type ConfigVersion struct {
-	ID         primitive.ObjectID `json:"id,omitempty",bson:"_id,omitempty"`
-	Config     map[string]string  `json:"config,omitempty",bson:"config,omitempty"`
-	ConfigName string             `json:"config_name,omitempty",bson:"config_name,omitempty"`
-	Checksum   [32]byte           `form:"checksum" json:"checksum" yaml:"checksum"`
-	CreatedBy  string             `json:"created_by,omitempty",bson:"created_by,omitempty"`
-	Created    time.Time          `json:"created,omitempty",bson:"created"`
+	Config   map[string]interface{} `json:"config" bson:"config"`
+	Checksum Checksum               `form:"checksum" json:"checksum,omitempty" bson:"checksum,omitempty"`
 }
