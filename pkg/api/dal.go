@@ -257,7 +257,6 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 
 	go func() {
 		defer wg.Done()
-		d.Logger.Info("Got here 2")
 		// create a new configVersion
 		configVersion, err := configVersionCollection.InsertOne(ctx, configAdd)
 
@@ -265,16 +264,14 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 			Result: configVersion,
 			Error:  err,
 		}
-		d.Logger.Info("Got here 3")
+		
 		chConfigVersion <- qr
-		d.Logger.Info("Got here 5")
 	}()
 
 	go func() {
 		defer wg.Done()
 		// UpdateOne accept two argument of type Context
 		// and of empty interface
-		d.Logger.Info("Got here 1")
 		updateDoc := bson.D{{"$set", configAdd}}
 		config, err := configCollection.UpdateOne(ctx, filter, updateDoc, opts)
 
@@ -283,9 +280,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 			Error:  err,
 		}
 
-		d.Logger.Info("Got here 4")
 		chConfig <- qr
-		d.Logger.Info("Got here 6")
 	}()
 
 	qrConfigVersion := <-chConfigVersion
