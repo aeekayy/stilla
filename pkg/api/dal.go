@@ -331,7 +331,6 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	err := d.Cache.Get(cacheKey, &respEnc)
 
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
-	configVersionCollection := d.DocumentStore.Database(configDB).Collection(configVersionCollectionlection)
 
 	if err == nil {
 		bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
@@ -394,28 +393,9 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 		return configResponse, fmt.Errorf("error accessing the config document: %s", err)
 	}
 
-	var versionResult bson.M
-
-	err = configVersionCollection.FindOne(
-		ctx,
-		bson.D{{"_id", bson.M{"$eq": result["config_version"]}}},
-		options.FindOne().SetProjection(bson.M{"_id": 0, "config": 1, "created_by": 1, "created": 1, "checksum": 1}),
-	).Decode(&versionResult)
-
 	// TODO fix the response. The config version is empty
 	configResponse.Ingest(&result)
 
-	if err != nil {
-		// ErrNoDocuments means that the filter did not match any documents in
-		// the collection.
-		if err == mongo.ErrNoDocuments {
-			return configResponse, fmt.Errorf("the config version document does not exist: %s", err)
-		}
-
-		return configResponse, fmt.Errorf("error accessing the document: %s", err)
-	}
-
-	result["config"] = configResponse
 	logLine := utils.SanitizeLogMessage("setting cache for %s", cacheKey)
 	d.Logger.Infof(logLine)
 	bsonBin, err := bson.Marshal(result)
