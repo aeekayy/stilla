@@ -47,17 +47,15 @@ func SanitizeLogMessage(log string, input ...string) string {
 	cleanLog := log
 
 	for _, v := range input {
-		if v == "" {
-			return log
-		}
+		if v != "" {
+			cleanUserInput := "****"
+			if len(v) > 3 {
+				cleanUserInput = v[0:3] + "****"
+			}
 
-		cleanUserInput := "****"
-		if len(v) > 3 {
-			cleanUserInput = v[0:3] + "****"
+			//fullLog := fmt.Sprintf(log, userInput)
+			cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
 		}
-
-		//fullLog := fmt.Sprintf(log, userInput)
-		cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
 	}
 	cleanLog = strings.Replace(cleanLog, "\n", "", -1)
 	cleanLog = strings.Replace(cleanLog, "\r", "", -1)
@@ -72,17 +70,15 @@ func SanitizeLogMessageF(log string, input ...string) string {
 	for _, v := range input {
 		cleanLog := fmt.Sprintf(log, v)
 
-		if v == "" {
-			return log
-		}
+		if v != "" {
+			cleanUserInput := "****"
+			if len(v) > 3 {
+				cleanUserInput = v[0:3] + "****"
+			}
 
-		cleanUserInput := "****"
-		if len(v) > 3 {
-			cleanUserInput = v[0:3] + "****"
+			//fullLog := fmt.Sprintf(log, userInput)
+			cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
 		}
-
-		//fullLog := fmt.Sprintf(log, userInput)
-		cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
 	}
 	cleanLog = strings.Replace(cleanLog, "\n", "", -1)
 	cleanLog = strings.Replace(cleanLog, "\r", "", -1)
@@ -95,17 +91,15 @@ func SanitizeErrorMessage(log error, input ...string) error {
 	cleanLog := log.Error()
 
 	for _, v := range input {
-		if v == "" {
-			return log
-		}
+		if v != "" {
+			cleanUserInput := "****"
+			if len(v) > 3 {
+				cleanUserInput = v[0:3] + "****"
+			}
 
-		cleanUserInput := "****"
-		if len(v) > 3 {
-			cleanUserInput = v[0:3] + "****"
+			//fullLog := fmt.Sprintf(log, userInput)
+			cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
 		}
-
-		//fullLog := fmt.Sprintf(log, userInput)
-		cleanLog = strings.Replace(cleanLog, v, cleanUserInput, -1)
 	}
 	cleanLog = strings.Replace(cleanLog, "\n", "", -1)
 	cleanLog = strings.Replace(cleanLog, "\r", "", -1)
