@@ -30,7 +30,7 @@ setup:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 	# install atlas
 	curl -sSf https://atlasgo.sh | sh
-	apt install -y python3
+	apt install -y python3 python3-pip
 	pip3 install locust
 
 lint:
