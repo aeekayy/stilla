@@ -92,8 +92,8 @@ jobs:
       - name: Test Stilla
         run: |
           just test
-          just seed
           just run
+          just seed
           just load-test
         env:
           POSTGRES_HOST: postgres
