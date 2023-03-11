@@ -92,6 +92,7 @@ jobs:
       - name: Test Stilla
         run: |
           just test
+          just seed
           just run
           just load-test
         env:

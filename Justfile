@@ -55,4 +55,7 @@ run: build
 	cp stilla.gh.yaml stilla.yaml
 	./stilla &
 
+seed:
+	scripts/seed.sh
+
 prepare-commit: lint fmt unit-test performance
