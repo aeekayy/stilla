@@ -36,6 +36,9 @@ jobs:
       mongo:
         # Docker Hub image
         image: mongo
+        env:
+          MONGO_INITDB_ROOT_USERNAME: mongo
+          MONGO_INITDB_ROOT_PASSWORD: mongo
         options: >-
           --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
           --health-interval 10s

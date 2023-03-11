@@ -52,7 +52,5 @@ load-test:
 run: build
 	cp stilla.gh.yaml stilla.yaml
 	./stilla &
-	echo "$!" > stilla.pid
-	cat stilla.pid
 
 prepare-commit: lint fmt unit-test performance
