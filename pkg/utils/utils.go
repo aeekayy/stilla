@@ -13,9 +13,9 @@ import (
 // SanitizeMongoInput sanitize Mongo input to guard against
 // NoSQL injection
 func SanitizeMongoInput(s string) string {
-	m1 := regexp.MustCompile(`/^\$|\./g`)
+	m1 := regexp.MustCompile(`/^\$|\.|\+|\?|\\|\&|\[|\]|\^|\%/g`)
 	// return strings.Trim(s, " $/^\\")
-	return m1.ReplaceAllString(s, "-")
+	return m1.ReplaceAllString(s, "")
 }
 
 // MapToProtobufStruct convert a map to a struct. This helps to
@@ -68,7 +68,7 @@ func SanitizeLogMessageF(log string, input ...string) string {
 	cleanLog := log
 
 	for _, v := range input {
-		cleanLog := fmt.Sprintf(log, v)
+		cleanLog = fmt.Sprintf(log, v)
 
 		if v != "" {
 			cleanUserInput := "****"
@@ -110,7 +110,7 @@ func SanitizeErrorMessage(log error, input ...string) error {
 // ObfuscateValue obfuscate the string
 func ObfuscateValue(input string, char int) string {
 	if input == "" || char < 0 {
-		return input
+		return "****"
 	}
 
 	cleanUserInput := "****"
