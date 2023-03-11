@@ -51,8 +51,8 @@ load-test:
 
 run: build
 	cp stilla.gh.yaml stilla.yaml
-	./stilla & 
-	SVC_PID=$!
-	echo "$SVC_PID" > stilla.pid
+	./stilla &
+	echo "$!" > stilla.pid
+	cat stilla.pid
 
 prepare-commit: lint fmt unit-test performance
