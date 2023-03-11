@@ -264,7 +264,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 			Result: configVersion,
 			Error:  err,
 		}
-		
+
 		chConfigVersion <- qr
 	}()
 

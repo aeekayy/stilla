@@ -90,6 +90,7 @@ type DocumentDatabase struct {
 	Host     string `yaml:"host",json:"host"`
 	Name     string `yaml:"name",json:"name"`
 	Timeout  string `yaml:"timeout",json:"timeout"`
+	DNSSeed  bool   `yaml:"dns_seed",json:"dns_seed"`
 }
 
 // Server struct to hold web server configuration

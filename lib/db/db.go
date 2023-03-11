@@ -91,13 +91,17 @@ func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams stri
 
 // MongoConnect establishes a connection to a MongoDB cluster
 // https://www.geeksforgeeks.org/how-to-use-go-with-mongodb/
-func MongoConnect(ctx *context.Context, dbUser, dbPass, dbHost, dbTimeout string) (*mongo.Client, context.Context, context.CancelFunc, error) {
+func MongoConnect(ctx *context.Context, dbUser, dbPass, dbHost, dbTimeout string, dnsSeed bool) (*mongo.Client, context.Context, context.CancelFunc, error) {
 
 	// ctx will be used to set deadline for process, here
 	// deadline will of 30 seconds.
 	mongoctx, cancel := context.WithTimeout(*ctx, 10*time.Second)
 
-	uri := fmt.Sprintf("mongodb+srv://%s:%s@%s/?retryWrites=true&w=majority", dbUser, dbPass, dbHost)
+	protocol := "mongodb"
+	if dnsSeed {
+		protocol = "mongodb+srv"
+	}
+	uri := fmt.Sprintf("%s://%s:%s@%s/?retryWrites=true&w=majority", protocol, dbUser, dbPass, dbHost)
 
 	// mongo.Connect return mongo.Client method
 	client, err := mongo.Connect(mongoctx, options.Client().ApplyURI(uri))

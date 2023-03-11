@@ -15,6 +15,7 @@ docdb:
   password: "mongo"
   host: "mongo"
   name: "configdb"
+  dns_seed: false
 server:
   port: 8080
   timeout: 15s
