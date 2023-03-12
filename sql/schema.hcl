@@ -9,6 +9,10 @@ table "api_keys" {
     null = false
     type = character_varying
   }
+  column "token" {
+    type = uuid
+    default = sql("uuid_generate_v4()")
+  }
   column "role" {
     null = false
     type = uuid
@@ -73,6 +77,7 @@ table "audit" {
     columns = [column.id]
   }
 }
+
 table "roles" {
   schema = schema.public
   column "id" {

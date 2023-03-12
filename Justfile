@@ -30,6 +30,8 @@ setup:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 	# install atlas
 	curl -sSf https://atlasgo.sh | sh
+	apt install -y python3 python3-pip
+	pip3 install locust
 
 lint:
 	golint ./...
@@ -45,5 +47,15 @@ test: unit-test
 performance:
 	cd {{cwd}}/lib/db && go test -bench=.
 	cd {{cwd}}
+
+load-test:
+	locust -f tests/locustfile.py --headless -u 100 -r 3 --host http://localhost:8080 -t 300s -L ERROR
+
+run: build
+	cp stilla.gh.yaml stilla.yaml
+	./stilla &
+
+seed:
+	scripts/seed.sh
 
 prepare-commit: lint fmt unit-test performance

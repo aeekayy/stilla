@@ -124,13 +124,14 @@ func TestSuiteAllQueries(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var keyName string
 			var key string
+			var hostID string
 
 			if !tc.skipGenerateAPIKey {
 				keyName = tc.inputName
 				if keyName == "{RANDOM}" {
 					keyName = randstring(10)
 				}
-				key, err = pgpool.GenerateAPIKey(keyName, tc.inputTags)
+				hostID, key, err = pgpool.GenerateAPIKey(keyName, tc.inputTags)
 
 				if (err != nil) != tc.errorExpected {
 					t.Errorf("expected %t, got the error %+v", tc.errorExpected, err)
@@ -139,7 +140,7 @@ func TestSuiteAllQueries(t *testing.T) {
 			}
 
 			if tc.checkKey {
-				name, err := pgpool.ValidateAPIKey(key)
+				name, err := pgpool.ValidateAPIKey(hostID, key)
 
 				if err != nil {
 					t.Errorf("error validating the api key %s", key)
@@ -150,11 +151,11 @@ func TestSuiteAllQueries(t *testing.T) {
 
 			if tc.checkGetAPIKey {
 				// retrieve the api key
-				apiKey, err := pgpool.GetAPIKey(key)
+				apiKey, err := pgpool.GetAPIKey(hostID, key)
 
 				// nil != nil false != true
 				if (err != nil) != tc.getAPIKeyErrorExpected {
-					t.Errorf("error retrieving the api key: %v", apiKey)
+					t.Errorf("error retrieving the api key for %s: %v", key, apiKey)
 				}
 
 				assert.Equal(t, keyName, apiKey.Name, "the name of the api keys should match")

@@ -31,7 +31,7 @@ func HostRegister(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
-		apiKey, err := dal.RegisterHost(c, req, c.Request)
+		_, apiKey, err := dal.RegisterHost(c, req, c.Request)
 
 		if err != nil {
 			output := utils.SanitizeLogMessage(req.Name, req.Name)
@@ -40,6 +40,7 @@ func HostRegister(dal *DAL) gin.HandlerFunc {
 			return
 		}
 
+		// Todo replace the response with a struct. Include the host ID in the response
 		c.JSON(http.StatusOK, gin.H{
 			"data": apiKey,
 		})

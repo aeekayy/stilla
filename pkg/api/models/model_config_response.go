@@ -11,88 +11,26 @@
 package models
 
 import (
-	"encoding/json"
-	"fmt"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Checksum ...
-type Checksum string
-
 // ConfigResponse ...
 type ConfigResponse struct {
-	ID primitive.ObjectID `json:"_id" bson:"_id"`
+	ID *primitive.ObjectID `json:"ID" bson:"_id,omitempty"`
 	// Unique name for the configuration
-	ConfigName    string    `json:"config_name" bson:"config_name"`
-	CreatedBy     string    `json:"created_by" bson:"created_by"`
-	Config        Config    `json:"config,omitempty" bson:"config"`
-	ConfigVersion string    `json:"config_version" bson:"config_version"`
-	Host          string    `json:"host" bson:"host"`
-	Parents       []string  `json:"parents,omitempty" bson:"parents"`
-	Tags          []string  `form:"tags" json:"tags" yaml:"tags" bson:"tags"`
-	Created       time.Time `json:"created",bson:"created"`
-	Modified      time.Time `json:"modified" bson:"modified"`
-}
-
-// Config ...
-type Config struct {
-	Checksum  RawChecksum            `json:"checksum" bson:"checksum"`
-	Config    map[string]interface{} `json:"config,omitempty" bson:"config"`
-	Created   time.Time              `json:"created" bson:"created"`
-	CreatedBy string                 `json:"created_by,omitempty" bson:"created_by"`
-}
-
-// RawChecksum ...
-type RawChecksum struct {
-	Data Checksum `json:"Data" bson:"Data"`
-}
-
-// UnmarshalJSON ...
-func (c *Checksum) UnmarshalJSON(b []byte) error {
-	var r RawChecksum
-	if err := json.Unmarshal(b, &r); err != nil {
-		return err
-	}
-	*c = r.Data
-
-	return nil
-}
-
-// MarshalJSON ...
-func (c Checksum) MarshalJSON() ([]byte, error) {
-	var r RawChecksum
-	r.Data = c
-
-	return json.Marshal(r)
-}
-
-// GetBSON ...
-func (c Checksum) GetBSON() (interface{}, error) {
-	return RawChecksum{
-		Data: c,
-	}, nil
-}
-
-// SetBSON ...
-func (c *Checksum) SetBSON(raw bson.Raw) error {
-	err := raw.Validate()
-	if err != nil {
-		return err
-	}
-
-	val := raw.Lookup("Data")
-
-	s, ok := val.StringValueOK()
-
-	if !ok {
-		return fmt.Errorf("error retrieving checksum value")
-	}
-
-	*c = Checksum(s)
-	return nil
+	ConfigName string        `json:"config_name" bson:"config_name"`
+	CreatedBy  string        `json:"created_by" bson:"created_by"`
+	Config     ConfigVersion `json:"config,omitempty" bson:"config"`
+	ConfigID   string        `json:"config_id" bson:"config_id"`
+	Host       string        `json:"host" bson:"host"`
+	Parents    []string      `json:"parents,omitempty" bson:"parents,omitempty"`
+	Tags       []string      `form:"tags" json:"tags" yaml:"tags" bson:"tags"`
+	Version    int32         `json:"version" bson:"version"`
+	Created    time.Time     `json:"created",bson:"created"`
+	Modified   time.Time     `json:"modified",bson:"modified"`
 }
 
 // Ingest ingest data from a BSON map

@@ -81,10 +81,10 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 		return nil, err
 	}
 
-	mongoConn, _, _, err := db.MongoConnect(&ctx, config.DocDB.Username, config.DocDB.Password, config.DocDB.Host, config.DocDB.Timeout)
+	mongoConn, _, _, err := db.MongoConnect(&ctx, config.DocDB.Username, config.DocDB.Password, config.DocDB.Host, config.DocDB.Timeout, config.DocDB.DNSSeed)
 
 	if err != nil {
-		sugar.Fatalf("couldn't connect to the mongo database at %s: %w", config.DocDB.Host, err)
+		sugar.Fatalf("couldn't connect to the mongo database at %s: %s", config.DocDB.Host, err)
 		return nil, err
 	}
 
