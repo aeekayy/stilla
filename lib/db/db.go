@@ -91,13 +91,17 @@ func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams stri
 
 // MongoConnect establishes a connection to a MongoDB cluster
 // https://www.geeksforgeeks.org/how-to-use-go-with-mongodb/
-func MongoConnect(ctx *context.Context, dbUser, dbPass, dbHost, dbTimeout string) (*mongo.Client, context.Context, context.CancelFunc, error) {
+func MongoConnect(ctx *context.Context, dbUser, dbPass, dbHost, dbTimeout string, dnsSeed bool) (*mongo.Client, context.Context, context.CancelFunc, error) {
 
 	// ctx will be used to set deadline for process, here
 	// deadline will of 30 seconds.
 	mongoctx, cancel := context.WithTimeout(*ctx, 10*time.Second)
 
-	uri := fmt.Sprintf("mongodb+srv://%s:%s@%s/?retryWrites=true&w=majority", dbUser, dbPass, dbHost)
+	protocol := "mongodb"
+	if dnsSeed {
+		protocol = "mongodb+srv"
+	}
+	uri := fmt.Sprintf("%s://%s:%s@%s/?retryWrites=true&w=majority", protocol, dbUser, dbPass, dbHost)
 
 	// mongo.Connect return mongo.Client method
 	client, err := mongo.Connect(mongoctx, options.Client().ApplyURI(uri))
@@ -107,12 +111,12 @@ func MongoConnect(ctx *context.Context, dbUser, dbPass, dbHost, dbTimeout string
 
 // GetAPIKey retrieves an API key from the database
 // TODO: Add validation to the function
-func (d *Conn) GetAPIKey(keyID string) (APIKey, error) {
+func (d *Conn) GetAPIKey(host, keyID string) (APIKey, error) {
 	var apiKey APIKey
 	var apiID, apiName, apiRoleID string
 	var apiCreated, apiUpdated time.Time
 
-	err := d.Pool.QueryRow(*dbCtx, "SELECT id, name, role, created, updated FROM api_keys WHERE id=$1;", keyID).Scan(&apiID, &apiName, &apiRoleID, &apiCreated, &apiUpdated)
+	err := d.Pool.QueryRow(*dbCtx, "SELECT id, name, role, created, updated FROM api_keys WHERE id=$1 and token=$2;", host, keyID).Scan(&apiID, &apiName, &apiRoleID, &apiCreated, &apiUpdated)
 
 	if err != nil {
 		return apiKey, err
@@ -136,23 +140,24 @@ func (d *Conn) GetAPIKey(keyID string) (APIKey, error) {
 }
 
 // GenerateAPIKey generate an api key and a public key for a new host
-func (d *Conn) GenerateAPIKey(name string, tags []string) (string, error) {
+func (d *Conn) GenerateAPIKey(name string, tags []string) (string, string, error) {
+	var hostID string
 	var apiKeyID string
 
 	if !isValidName(name) {
-		return "", fmt.Errorf("invalid name entered. %s is not allowed", name)
+		return "", "", fmt.Errorf("invalid name entered. %s is not allowed", name)
 	}
 
-	err := d.Pool.QueryRow(d.Ctx, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&apiKeyID)
+	err := d.Pool.QueryRow(d.Ctx, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id, token;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&hostID, &apiKeyID)
 
-	return apiKeyID, err
+	return hostID, apiKeyID, err
 }
 
 // ValidateAPIKey validates an API Key for a host
-func (d *Conn) ValidateAPIKey(id string) (string, error) {
+func (d *Conn) ValidateAPIKey(id, token string) (string, error) {
 	var hostname string
 
-	err := d.Pool.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1;", id).Scan(&hostname)
+	err := d.Pool.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1 and token=$2;", id, token).Scan(&hostname)
 
 	return hostname, err
 }

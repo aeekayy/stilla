@@ -11,30 +11,30 @@ import (
 
 // Config main configuration struct for the service
 type Config struct {
-	Environment string                 `yaml:"enviornment" json:"environment"`
-	Database    Database               `yaml:"database" json:"database"`
-	Cache       Cache                  `yaml:"cache" json:"cache"`
-	DocDB       DocumentDatabase       `yaml:"docdb" json:"docdb"`
-	Server      Server                 `yaml:"server" json:"server"`
-	Kafka       map[string]interface{} `yaml:"kafka" json:"kafka"`
-	Audit       bool                   `yaml:"audit" json:"audit"`
-	SessionKey  string                 `yaml:"session_key" json:"session_key"`
-	Sentry      SentryConfig           `yaml:"sentry" json:"sentry"`
-	NewRelic    NewRelicConfig         `yaml:"new_relic" json:"new_relic"`
+	Environment string                 `yaml:"enviornment" json:"environment" mapstructure:"environment"`
+	Database    Database               `yaml:"database" json:"database" mapstructure:"database"`
+	Cache       Cache                  `yaml:"cache" json:"cache" mapstructure:"cache"`
+	DocDB       DocumentDatabase       `yaml:"docdb" json:"docdb" mapstructure:"docdb"`
+	Server      Server                 `yaml:"server" json:"server" mapstructure:"server"`
+	Kafka       map[string]interface{} `yaml:"kafka" json:"kafka" mapstructure:"kafka"`
+	Audit       bool                   `yaml:"audit" json:"audit" mapstructure:"audit"`
+	SessionKey  string                 `yaml:"session_key" json:"session_key" mapstructure:"session_key"`
+	Sentry      SentryConfig           `yaml:"sentry" json:"sentry" mapstructure:"sentry"`
+	NewRelic    NewRelicConfig         `yaml:"new_relic" json:"new_relic" mapstructure:"new_relic"`
 }
 
 // SentryConfig configuration for Sentry
 type SentryConfig struct {
-	Enabled bool   `yaml:"enabled" json:"enabled"`
-	DSN     string `yaml:"dsn" json:"dsn"`
+	Enabled bool   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	DSN     string `yaml:"dsn" json:"dsn" mapstructure:"dsn"`
 }
 
 // NewRelicConfig configuration for New Relic
 type NewRelicConfig struct {
-	Enabled          bool   `yaml:"enabled" json:"enabled"`
-	AppName          string `yaml:"app_name" json:"app_name"`
-	License          string `yaml:"license" json:"license"`
-	AppLogForwarding bool   `yaml:"app_log_forwarding" json:"app_log_forwarding"`
+	Enabled          bool   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
+	AppName          string `yaml:"app_name" json:"app_name" mapstructure:"app_name"`
+	License          string `yaml:"license" json:"license" mapstructure:"license"`
+	AppLogForwarding bool   `yaml:"app_log_forwarding" json:"app_log_forwarding" mapstructure:"app_log_forwarding"`
 }
 
 // GetKafkaConfig retrieves a Kafka.ConfigMap compatible struct from
@@ -68,34 +68,35 @@ func flattenKafkaConfigMap(prefix string, src map[string]interface{}, cm *kafka.
 
 // Cache struct to hold Redis configuration
 type Cache struct {
-	Host     string `yaml:"host", json:"host"`
-	Username string `yaml:"username", json:"username"`
-	Password string `yaml:"password", json:"password"`
-	Type     string `yaml:"type", json:"type"`
+	Host     string `yaml:"host" json:"host" mapstructure:"host"`
+	Username string `yaml:"username" json:"username" mapstructure:"username"`
+	Password string `yaml:"password" json:"password" mapstructure:"password"`
+	Type     string `yaml:"type" json:"type" mapstructure:"type"`
 }
 
 // Database Cache struct to hold Postgres configuration
 type Database struct {
-	Username   string `yaml:"username",json:"username"`
-	Password   string `yaml:"password",json:"password"`
-	Host       string `yaml:"host",json:"host"`
-	Name       string `yaml:"name",json:"name"`
-	Parameters string `yaml:"parameters",json:"parameters"`
+	Username   string `yaml:"username" json:"username" mapstructure:"username"`
+	Password   string `yaml:"password" json:"password" mapstructure:"password"`
+	Host       string `yaml:"host" json:"host" mapstructure:"host"`
+	Name       string `yaml:"name" json:"name" mapstructure:"name"`
+	Parameters string `yaml:"parameters" json:"parameters" mapstructure:"parameters"`
 }
 
 // DocumentDatabase Cache struct to hold MongoDB configuration
 type DocumentDatabase struct {
-	Username string `yaml:"username",json:"username"`
-	Password string `yaml:"password",json:"password"`
-	Host     string `yaml:"host",json:"host"`
-	Name     string `yaml:"name",json:"name"`
-	Timeout  string `yaml:"timeout",json:"timeout"`
+	Username string `yaml:"username" json:"username" mapstructure:"username"`
+	Password string `yaml:"password" json:"password" mapstructure:"password"`
+	Host     string `yaml:"host" json:"host" mapstructure:"host"`
+	Name     string `yaml:"name" json:"name" mapstructure:"name"`
+	Timeout  string `yaml:"timeout" json:"timeout" mapstructure:"timeout"`
+	DNSSeed  bool   `yaml:"dns_seed" json:"dns_seed" mapstructure:"dns_seed"`
 }
 
 // Server struct to hold web server configuration
 type Server struct {
-	Port    int    `yaml:"port",json:"port"`
-	Timeout string `yaml:"timeout",json:"timeout"`
+	Port    int    `yaml:"port" json:"port" mapstructure:"port"`
+	Timeout string `yaml:"timeout" json:"timeout" mapstructure:"timeout"`
 }
 
 // GetConfig retrieves the Viper configuration for the service

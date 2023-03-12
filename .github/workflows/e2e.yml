@@ -36,6 +36,9 @@ jobs:
       mongo:
         # Docker Hub image
         image: mongo
+        env:
+          MONGO_INITDB_ROOT_USERNAME: mongo
+          MONGO_INITDB_ROOT_PASSWORD: mongo
         options: >-
           --health-cmd "mongosh --eval 'db.runCommand({ping: 1})'"
           --health-interval 10s
@@ -89,6 +92,9 @@ jobs:
       - name: Test Stilla
         run: |
           just test
+          just run
+          just seed
+          just load-test
         env:
           POSTGRES_HOST: postgres
           POSTGRES_PORT: 5432
