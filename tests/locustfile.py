@@ -18,6 +18,6 @@ class ConfigUser(HttpUser):
         
         bearer_token = f"Bearer {token}"
         self.client.get(
-            url=f"/api/v1/host/{token}/config/kubernetes",
+            url=f"/api/v1/host/{hostID}/config/kubernetes",
             headers={ "Authorization": bearer_token, "HostID": hostID }
         )
