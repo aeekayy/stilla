@@ -3,7 +3,7 @@ Stilla is a configuration service that stores configuration for other services.
 
 # Dependencies 
 * Kafka (Optional)
-* MongoDB
+* MongoDB (>=5.0.0)
 * Redis
 * PostgreSQL
 

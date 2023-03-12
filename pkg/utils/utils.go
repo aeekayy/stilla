@@ -3,6 +3,7 @@ package utils
 
 import (
 	"fmt"
+	"html"
 	"os"
 	"regexp"
 	"strings"
@@ -13,8 +14,9 @@ import (
 // SanitizeMongoInput sanitize Mongo input to guard against
 // NoSQL injection
 func SanitizeMongoInput(s string) string {
+	s = html.EscapeString(s)
+	s = strings.Trim(s, " $/^\\")
 	m1 := regexp.MustCompile(`/^\$|\.|\+|\?|\\|\&|\[|\]|\^|\%/g`)
-	// return strings.Trim(s, " $/^\\")
 	return m1.ReplaceAllString(s, "")
 }
 
