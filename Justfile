@@ -9,6 +9,10 @@ protoc_zip := "protoc-" + protoc_ver + "-linux-x86_64.zip"
 
 set shell := ["bash", "-uc"]
 
+bazel:
+	bazel run //:gazelle
+	bazel run //:gazelle -- update-repos -from_file=go.mod -to_macro=deps.bzl%go_dependencies
+
 build:
 	# Solve the buildvcs flag issue later
 	go build -ldflags="-X 'main.Version=v0.0.1' -X 'main.BuildTime=$(date)' -X 'main.CommitHash=$(git rev-parse HEAD)'" -buildvcs=false -o {{name}}

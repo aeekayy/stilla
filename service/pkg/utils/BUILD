@@ -5,12 +5,12 @@ go_library(
     srcs = ["utils.go"],
     importpath = "github.com/aeekayy/stilla/service/pkg/utils",
     visibility = ["//visibility:public"],
-    deps = ["@org_golang_google_protobuf//types/known/structpb:go_default_library"],
+    deps = ["@org_golang_google_protobuf//types/known/structpb"],
 )
 
 go_test(
     name = "utils_test",
     srcs = ["utils_test.go"],
     embed = [":utils"],
-    deps = ["@com_github_stretchr_testify//assert:go_default_library"],
+    deps = ["@com_github_stretchr_testify//assert"],
 )

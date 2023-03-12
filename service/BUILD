@@ -16,8 +16,8 @@ go_library(
     deps = [
         "//service/pkg/api",
         "//service/pkg/models",
-        "@com_github_getsentry_sentry_go//:go_default_library",
-        "@org_uber_go_ratelimit//:go_default_library",
-        "@org_uber_go_zap//:go_default_library",
+        "@com_github_getsentry_sentry_go//:sentry-go",
+        "@org_uber_go_ratelimit//:ratelimit",
+        "@org_uber_go_zap//:zap",
     ],
 )

@@ -12,13 +12,13 @@ go_library(
     importpath = "github.com/aeekayy/stilla/service/lib/db",
     visibility = ["//visibility:public"],
     deps = [
-        "@com_github_google_uuid//:go_default_library",
-        "@com_github_jackc_pgx_v5//:go_default_library",
-        "@com_github_jackc_pgx_v5//pgconn:go_default_library",
-        "@com_github_jackc_pgx_v5//pgxpool:go_default_library",
-        "@org_golang_x_exp//slices:go_default_library",
-        "@org_mongodb_go_mongo_driver//mongo:go_default_library",
-        "@org_mongodb_go_mongo_driver//mongo/options:go_default_library",
+        "@com_github_google_uuid//:uuid",
+        "@com_github_jackc_pgx_v5//:pgx",
+        "@com_github_jackc_pgx_v5//pgconn",
+        "@com_github_jackc_pgx_v5//pgxpool",
+        "@org_golang_x_exp//slices",
+        "@org_mongodb_go_mongo_driver//mongo",
+        "@org_mongodb_go_mongo_driver//mongo/options",
     ],
 )
 
@@ -28,6 +28,6 @@ go_test(
     embed = [":db"],
     deps = [
         "//service/pkg/utils:lib",
-        "@com_github_stretchr_testify//assert:go_default_library",
+        "@com_github_stretchr_testify//assert",
     ],
 )
