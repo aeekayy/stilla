@@ -41,7 +41,7 @@ const (
 	dateFormat                     = "2021-02-03T04:55:46.607+08:00"
 )
 
-// MongoQueryResult
+// MongoQueryResult used to manage Mongo query results from channels
 type MongoQueryResult struct {
 	Result interface{} `json:"result"`
 	Error  error       `json:"error"`
@@ -100,7 +100,7 @@ func (a *AuditEvent) ToByteSlice() ([]byte, error) {
 }
 
 // RegisterHost registers a host and provides the requestor an API key
-func (d *DAL) RegisterHost(ctx *gin.Context, hostRegisterIn models.HostRegisterIn, req interface{}) (string, error) {
+func (d *DAL) RegisterHost(ctx *gin.Context, hostRegisterIn models.HostRegisterIn, req interface{}) (string, string, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -115,14 +115,14 @@ func (d *DAL) RegisterHost(ctx *gin.Context, hostRegisterIn models.HostRegisterI
 
 	d.EmitMessage("config.audit", "HostRegister", requestDetails)
 
-	apiKey, err := d.Database.GenerateAPIKey(hostRegisterIn.Name, hostRegisterIn.Tags)
+	hostID, apiKey, err := d.Database.GenerateAPIKey(hostRegisterIn.Name, hostRegisterIn.Tags)
 	d.Logger.Infof("Generated API key")
 
 	if err != nil {
-		return "", fmt.Errorf("error registering host: %s", err)
+		return "", "", fmt.Errorf("error registering host: %s", err)
 	}
 
-	return apiKey, err
+	return hostID, apiKey, err
 }
 
 // LoginHost uses the API Key of a host and validates it. Creates a new session if the key is valid
@@ -141,7 +141,7 @@ func (d *DAL) LoginHost(ctx *gin.Context, hostLoginIn models.HostLoginIn, req in
 
 	d.EmitMessage("config.audit", "HostLogin", requestDetails)
 
-	hostKey, err := d.Database.ValidateAPIKey(hostLoginIn.APIKey)
+	hostKey, err := d.Database.ValidateAPIKey(hostLoginIn.APIKey, hostLoginIn.Host)
 
 	if err != nil {
 		return "", fmt.Errorf("invalid api key for host: %s", err)
@@ -666,10 +666,10 @@ func (d *DAL) GetAuditLogs(ctx *gin.Context, offset string, limit string, req in
 }
 
 // ValidateToken ...
-func ValidateToken(dal *DAL, token string) (string, bool, error) {
+func ValidateToken(dal *DAL, hostID string, token string) (string, bool, error) {
 	var resp string
 
-	resp, err := dal.Database.ValidateAPIKey(token)
+	resp, err := dal.Database.ValidateAPIKey(hostID, token)
 
 	if resp != "" {
 		return resp, true, nil

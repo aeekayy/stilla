@@ -14,9 +14,10 @@ class ConfigUser(HttpUser):
     @task
     def get_config(self):
         token = os.getenv("API_TOKEN", "9923d21c-dbac-421d-a31a-649a849d4c85")
+        hostID = os.getenv("HOST_ID", "cfacd739-4a13-47ae-82c3-13d6d7ffeb2e")
         
         bearer_token = f"Bearer {token}"
         self.client.get(
             url=f"/api/v1/host/{token}/config/kubernetes",
-            headers={ "Authorization": bearer_token }
+            headers={ "Authorization": bearer_token, "HostID": hostID }
         )

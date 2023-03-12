@@ -231,12 +231,14 @@ var configsRoutes = Routes{
 	},
 }
 
-func extractToken(c *gin.Context) (string, bool) {
+func extractToken(c *gin.Context) (string, string, bool) {
 	bearerToken := c.Request.Header.Get("Authorization")
+	host := c.Request.Header.Get("HostID")
 	if len(strings.Split(bearerToken, " ")) == 2 {
-		return strings.Split(bearerToken, " ")[1], true
+		return strings.Split(bearerToken, " ")[1], host, true
 	}
-	return "", false
+
+	return "", host, false
 }
 
 // AuthRequired is a simple middleware to check the session
@@ -244,14 +246,15 @@ func AuthRequired(d *DAL) gin.HandlerFunc {
 	fn := func(c *gin.Context) {
 		var host interface{}
 		d.Logger.Info("Checking authorization")
-		token, ok := extractToken(c)
+		token, hostID, ok := extractToken(c)
 		if ok {
 			// check for the token's validity
-			host, ok, _ = ValidateToken(d, token)
+			host, ok, _ = ValidateToken(d, hostID, token)
 			c.Set("x-host-id", token)
 			if !ok {
 				d.Logger.Infof("Auth failed for %s", utils.ObfuscateValue(token, 8))
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+				return
 			}
 		} else {
 			session := sessions.Default(c)
@@ -261,6 +264,7 @@ func AuthRequired(d *DAL) gin.HandlerFunc {
 		if host == "" {
 			// Abort the request with the appropriate error code
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+			return
 		}
 		// set the context
 		c.Set("x-host", host)

@@ -13,4 +13,5 @@ package models
 // HostLoginIn ...
 type HostLoginIn struct {
 	APIKey string `form:"apikey" json:"apikey" yaml:"apikey"`
+	Host   string `form:"host" json:"host" yaml:"host"`
 }
