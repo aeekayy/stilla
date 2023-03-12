@@ -14,8 +14,8 @@ import (
 	"go.uber.org/ratelimit"
 	"go.uber.org/zap"
 
-	"github.com/aeekayy/stilla/pkg/api"
-	"github.com/aeekayy/stilla/pkg/models"
+	"github.com/aeekayy/stilla/service/pkg/api"
+	"github.com/aeekayy/stilla/service/pkg/models"
 )
 
 const (

@@ -4,7 +4,7 @@ package tutorial;
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 
-option go_package = "github.com/aeekayy/stilla/api/protobuf/messages";
+option go_package = "github.com/aeekayy/stilla/service/api/protobuf/messages";
 
 
 message AuditLog {

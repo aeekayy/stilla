@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/aeekayy/stilla/pkg/utils"
+	"github.com/aeekayy/stilla/service/pkg/utils"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyz" +

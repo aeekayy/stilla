@@ -19,7 +19,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/newrelic/go-agent/v3/integrations/nrgin"
 
-	"github.com/aeekayy/stilla/pkg/utils"
+	"github.com/aeekayy/stilla/service/pkg/utils"
 )
 
 const hostKey = "host"

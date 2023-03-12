@@ -25,11 +25,11 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	pb "github.com/aeekayy/stilla/api/protobuf/messages"
-	"github.com/aeekayy/stilla/lib/db"
-	"github.com/aeekayy/stilla/pkg/api/models"
-	svcmodels "github.com/aeekayy/stilla/pkg/models"
-	"github.com/aeekayy/stilla/pkg/utils"
+	pb "github.com/aeekayy/stilla/service/api/protobuf/messages"
+	"github.com/aeekayy/stilla/service/lib/db"
+	"github.com/aeekayy/stilla/service/pkg/api/models"
+	svcmodels "github.com/aeekayy/stilla/service/pkg/models"
+	"github.com/aeekayy/stilla/service/pkg/utils"
 )
 
 const (

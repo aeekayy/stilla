@@ -16,8 +16,8 @@ import (
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 
-	"github.com/aeekayy/stilla/pkg/api/models"
-	"github.com/aeekayy/stilla/pkg/utils"
+	"github.com/aeekayy/stilla/service/pkg/api/models"
+	"github.com/aeekayy/stilla/service/pkg/utils"
 )
 
 // HostRegister - Register host for an API key
