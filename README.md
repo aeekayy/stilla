@@ -39,3 +39,6 @@ kafka: # Only used if audit is enabled
   sasl.password: password
   session.timeout.ms: 45000
 ```
+
+# Build Notes
+2023-03-18: `just bazel` doesn't work at the moment. With the release of [go 1.20](https://go.dev/doc/go1.20), `$GOROOT/pkg` no longer contains precompiled versions of the standard library. This causes a failure for `go_sdk` since it expects `.a` files. In addition, old versions of go still use `pkg`. I have to dig deeper into this to allow `go_sdk` to be used with old versions of go with an empty `go_sdk:libs` package.

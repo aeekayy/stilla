@@ -7,13 +7,13 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   termsOfService: http://swagger.io/terms/
-  title: Buffet Config Manager
+  title: Stilla Config Manager
   version: 0.1.0
 externalDocs:
   description: Find out more about Swagger
   url: http://swagger.io
 servers:
-- url: https://buffet.aeekay.co/v1
+- url: https://stilla.aeekay.co/v1
 tags:
 - description: Configuration Managmenet API
   externalDocs:
@@ -110,6 +110,45 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: Not found
       summary: Retrieve a configuration by configuration ID
+      tags:
+      - config
+  /config/{hostId}/{configId}:
+    get:
+      description: Retrieve a configuration by configuration ID and host ID
+      operationId: getConfigByHostID
+      parameters:
+      - description: ID of the configuration to retrieve
+        explode: false
+        in: path
+        name: configId
+        required: true
+        schema:
+          format: uuid
+        style: simple
+      - description: ID of the host the configuration is attached to
+        explode: false
+        in: path
+        name: hostId
+        required: true
+        schema:
+          format: uuid
+        style: simple
+      responses:
+        "200":
+          $ref: '#/components/responses/GetConfigResponse'
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Bad request. Error with the request.
+        "404":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: Not found
+      summary: Retrieve a configuration by configuration ID and host ID
       tags:
       - config
     patch:
@@ -293,6 +332,7 @@ components:
       example:
         config_name: ""
         owner: ""
+        host: ""
         config: ""
         parents: ""
       properties:
@@ -300,6 +340,8 @@ components:
           description: Unique name for the configuration
         owner: {}
         config: {}
+        host:
+          format: uuid
         parents:
           items: {}
       required:

@@ -46,6 +46,9 @@ jobs:
         # with:
         #   languages: go, javascript, csharp, python, cpp, java, ruby
 
+      - name: Setup Just
+        uses: extractions/setup-just@v1
+
       # Autobuild attempts to build any compiled languages (C/C++, C#, Go, or Java).
       # If this step fails, then you should remove it and run the build manually (see below).
       # - name: Autobuild
@@ -62,7 +65,7 @@ jobs:
       #     make bootstrap
       #     make release
       - run: |
-          make build
+          just build
         env:
           GITHUB_PATH: ${GITHUB_PATH}:${GOPATH}/bin
 

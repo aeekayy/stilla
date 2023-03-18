@@ -42,6 +42,6 @@ go_rules_dependencies()
 
 protobuf_deps()
 
-go_register_toolchains(version = "1.19.4")
+go_register_toolchains(version = "1.20.2")
 
 gazelle_dependencies()
