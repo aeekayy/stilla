@@ -54,8 +54,10 @@ setup:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 	# install atlas
 	curl -sSf https://atlasgo.sh | sh
-	apt install -y python3 python3-pip
+	apt install -y python3 python3-pip postgresql-client unzip 
 	pip3 install locust
+	pip3 install virtualenv
+	pip3 install virtualenvwrapper
 
 # Setup Python virtual environment
 # {{ python_dir }}/bin/pip3 install sdk/python/requirements.txt
