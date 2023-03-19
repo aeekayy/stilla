@@ -58,6 +58,7 @@ setup:
 	pip3 install locust
 	pip3 install virtualenv
 	pip3 install virtualenvwrapper
+	pip3 install pytest
 
 # Setup Python virtual environment
 # {{ python_dir }}/bin/pip3 install sdk/python/requirements.txt
