@@ -98,7 +98,7 @@ performance:
 	cd {{cwd}}
 
 load-test:
-	locust -f tests/locustfile.py --headless -u 100 -r 3 --host http://localhost:8080 -t 300s -L ERROR
+	locust -f tests/locustfile.py --headless --skip-log -u 100 -r 3 --host http://localhost:8080 -t 300s -L ERROR
 
 # Run the Stilla service
 run: build
