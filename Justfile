@@ -33,7 +33,9 @@ build-go:
 build-python: setup-python
 	#!/bin/bash
 	cd sdk/python
-	{{ python_dir }}/bin/python -m build 
+	pip3 install -r requirements.txt
+	python -m build 
+	python install ./
 
 # Generates Go files from openapi specification
 gen-api:
