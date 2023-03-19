@@ -250,7 +250,7 @@ func AuthRequired(d *DAL) gin.HandlerFunc {
 		if ok {
 			// check for the token's validity
 			host, ok, _ = ValidateToken(d, hostID, token)
-			c.Set("x-host-id", token)
+			c.Set("x-host-id", hostID)
 			if !ok {
 				d.Logger.Infof("Auth failed for %s", utils.ObfuscateValue(hostID, 8))
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
