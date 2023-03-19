@@ -1,0 +1,22 @@
+[project]
+name = "stilla_client"
+version = "0.0.1"
+authors = [
+  { name="Farye Nwede", email="info@aeekay.com" },
+]
+description = "Client for Stilla service"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/aeekayy/stilla"
+"Bug Tracker" = "https://github.com/aeekayy/stilla/issues"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
