@@ -1,7 +1,7 @@
 ## Pull Request Checklist
 
 ### Description
-Describe the changes include in this pull request.
+Describe the changes included in this pull request.
 
 ### Checklist
 - [ ] Tests have been added
