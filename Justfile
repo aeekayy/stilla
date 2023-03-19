@@ -5,7 +5,7 @@ cwd := `pwd`
 # Language: Go 1.20
 api_spec := "service/api/openapi.yaml"
 api_path := "./service/pkg/api"
-svc_db := trim(`psql "postgresql://postgres:postgres@${POSTGRES_HOST:-localhost}:5432/postgres" -c "select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('stilla'));" -t`)
+svc_db := if env_var_or_default("E2E", "false") == "true" { trim(`psql "postgresql://postgres:postgres@${POSTGRES_HOST:-localhost}:5432/postgres" -c "select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('stilla'));" -t`) } else { 'stilla' }
 protoc_ver := "22.0"
 protoc_zip := "protoc-" + protoc_ver + "-linux-x86_64.zip"
 
@@ -30,10 +30,12 @@ build-go:
 	# Solve the buildvcs flag issue later
 	go build -ldflags="-X 'main.Version=v0.0.1' -X 'main.BuildTime=$(date)' -X 'main.CommitHash=$(git rev-parse HEAD)'" -buildvcs=false -o {{name}} ./service
 
-build-python: setup-python
+build-python:
 	#!/bin/bash
 	cd sdk/python
-	{{ python_dir }}/bin/python -m build 
+	pip3 install -r requirements.txt
+	python3 -m build 
+	pip3 install ./
 
 # Generates Go files from openapi specification
 gen-api:
@@ -54,8 +56,11 @@ setup:
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 	# install atlas
 	curl -sSf https://atlasgo.sh | sh
-	apt install -y python3 python3-pip
+	apt install -y python3 python3-pip postgresql-client unzip 
 	pip3 install locust
+	pip3 install virtualenv
+	pip3 install virtualenvwrapper
+	pip3 install pytest
 
 # Setup Python virtual environment
 # {{ python_dir }}/bin/pip3 install sdk/python/requirements.txt
@@ -89,7 +94,16 @@ unit-test-go:
 	go test -v ./...
 
 unit-test-python:
-	cd sdk/python && pytest
+	#!/bin/bash
+	export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
+	export WORKON_HOME=./.virtualenvs
+	source $HOME/.local/bin/virtualenvwrapper.sh
+	cd sdk/python
+	echo -e "python: ${VIRTUALENVWRAPPER_PYTHON}\nworkon_home=${WORKON_HOME}"
+	if test ! -e {{ python_dir }}; then mkvirtualenv -p {{ system_python }} -a {{ cwd }}/sdk/python {{ python_venv }} && echo "Created stilla-client"; fi
+	source {{ python_dir }}/bin/activate
+	{{ python_dir }}/bin/pip3 install -r requirements.txt
+	pytest
 
 test: unit-test
 
@@ -98,7 +112,7 @@ performance:
 	cd {{cwd}}
 
 load-test:
-	locust -f tests/locustfile.py --headless --skip-log -u 100 -r 3 --host http://localhost:8080 -t 300s -L ERROR
+	locust -f service/tests/locustfile.py --headless --skip-log -u 100 -r 3 --host http://localhost:8080 -t 300s -L ERROR
 
 # Run the Stilla service
 run: build
