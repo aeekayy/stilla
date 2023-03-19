@@ -78,13 +78,18 @@ lint-go:
 	golint ./...
 
 lint-python:
-	black
+	black ./...
 
 fmt:
 	go fmt ./...
 
-unit-test:
+unit-test: unit-test-go unit-test-python
+
+unit-test-go:
 	go test -v ./...
+
+unit-test-python:
+	cd sdk/python && pytest
 
 test: unit-test
 

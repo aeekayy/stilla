@@ -1,5 +1,5 @@
 [project]
-name = "stilla-client"
+name = "stilla_client"
 version = "0.0.1"
 authors = [
   { name="Farye Nwede", email="info@aeekay.com" },
