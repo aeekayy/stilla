@@ -5,7 +5,7 @@ cwd := `pwd`
 # Language: Go 1.20
 api_spec := "service/api/openapi.yaml"
 api_path := "./service/pkg/api"
-svc_db := if env_var("E2E") == "true" { trim(`psql "postgresql://postgres:postgres@${POSTGRES_HOST:-localhost}:5432/postgres" -c "select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('stilla'));" -t`) } else { 'stilla' }
+svc_db := if env_var_or_default("E2E", "false") == "true" { trim(`psql "postgresql://postgres:postgres@${POSTGRES_HOST:-localhost}:5432/postgres" -c "select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('stilla'));" -t`) } else { 'stilla' }
 protoc_ver := "22.0"
 protoc_zip := "protoc-" + protoc_ver + "-linux-x86_64.zip"
 
