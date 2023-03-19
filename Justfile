@@ -30,7 +30,7 @@ build-go:
 	# Solve the buildvcs flag issue later
 	go build -ldflags="-X 'main.Version=v0.0.1' -X 'main.BuildTime=$(date)' -X 'main.CommitHash=$(git rev-parse HEAD)'" -buildvcs=false -o {{name}} ./service
 
-build-python: setup-python
+build-python:
 	#!/bin/bash
 	cd sdk/python
 	pip3 install -r requirements.txt
