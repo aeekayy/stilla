@@ -5,7 +5,7 @@ cwd := `pwd`
 # Language: Go 1.20
 api_spec := "service/api/openapi.yaml"
 api_path := "./service/pkg/api"
-svc_db := trim(`psql "postgresql://postgres:postgres@${POSTGRES_HOST:-localhost}:5432/postgres" -c "select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('stilla'));" -t`)
+svc_db := if env_var("E2E") == "true" { trim(`psql "postgresql://postgres:postgres@${POSTGRES_HOST:-localhost}:5432/postgres" -c "select exists(SELECT datname FROM pg_catalog.pg_database WHERE lower(datname) = lower('stilla'));" -t`) } else { 'stilla' }
 protoc_ver := "22.0"
 protoc_zip := "protoc-" + protoc_ver + "-linux-x86_64.zip"
 
@@ -89,7 +89,16 @@ unit-test-go:
 	go test -v ./...
 
 unit-test-python:
-	cd sdk/python && pytest
+	#!/bin/bash
+	export VIRTUALENVWRAPPER_PYTHON=/usr/bin/python3
+	export WORKON_HOME=./.virtualenvs
+	source $HOME/.local/bin/virtualenvwrapper.sh
+	cd sdk/python
+	echo -e "python: ${VIRTUALENVWRAPPER_PYTHON}\nworkon_home=${WORKON_HOME}"
+	if test ! -e {{ python_dir }}; then mkvirtualenv -p {{ system_python }} -a {{ cwd }}/sdk/python {{ python_venv }} && echo "Created stilla-client"; fi
+	source {{ python_dir }}/bin/activate
+	{{ python_dir }}/bin/pip3 install -r requirements.txt
+	pytest
 
 test: unit-test
 
