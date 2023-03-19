@@ -35,7 +35,7 @@ build-python:
 	cd sdk/python
 	pip3 install -r requirements.txt
 	python3 -m build 
-	python3 install ./
+	pip3 install ./
 
 # Generates Go files from openapi specification
 gen-api:
