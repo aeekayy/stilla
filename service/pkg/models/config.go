@@ -11,29 +11,29 @@ import (
 
 // Config main configuration struct for the service
 type Config struct {
-	Environment string                 `yaml:"enviornment" json:"environment" mapstructure:"environment"`
+	Kafka       map[string]interface{} `yaml:"kafka" json:"kafka" mapstructure:"kafka"`
 	Database    Database               `yaml:"database" json:"database" mapstructure:"database"`
 	Cache       Cache                  `yaml:"cache" json:"cache" mapstructure:"cache"`
-	DocDB       DocumentDatabase       `yaml:"docdb" json:"docdb" mapstructure:"docdb"`
 	Server      Server                 `yaml:"server" json:"server" mapstructure:"server"`
-	Kafka       map[string]interface{} `yaml:"kafka" json:"kafka" mapstructure:"kafka"`
-	Audit       bool                   `yaml:"audit" json:"audit" mapstructure:"audit"`
-	SessionKey  string                 `yaml:"session_key" json:"session_key" mapstructure:"session_key"`
 	Sentry      SentryConfig           `yaml:"sentry" json:"sentry" mapstructure:"sentry"`
+	Environment string                 `yaml:"enviornment" json:"environment" mapstructure:"environment"`
+	SessionKey  string                 `yaml:"session_key" json:"session_key" mapstructure:"session_key"`
+	DocDB       DocumentDatabase       `yaml:"docdb" json:"docdb" mapstructure:"docdb"`
 	NewRelic    NewRelicConfig         `yaml:"new_relic" json:"new_relic" mapstructure:"new_relic"`
+	Audit       bool                   `yaml:"audit" json:"audit" mapstructure:"audit"`
 }
 
 // SentryConfig configuration for Sentry
 type SentryConfig struct {
-	Enabled bool   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
 	DSN     string `yaml:"dsn" json:"dsn" mapstructure:"dsn"`
+	Enabled bool   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
 }
 
 // NewRelicConfig configuration for New Relic
 type NewRelicConfig struct {
-	Enabled          bool   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
 	AppName          string `yaml:"app_name" json:"app_name" mapstructure:"app_name"`
 	License          string `yaml:"license" json:"license" mapstructure:"license"`
+	Enabled          bool   `yaml:"enabled" json:"enabled" mapstructure:"enabled"`
 	AppLogForwarding bool   `yaml:"app_log_forwarding" json:"app_log_forwarding" mapstructure:"app_log_forwarding"`
 }
 
@@ -95,8 +95,8 @@ type DocumentDatabase struct {
 
 // Server struct to hold web server configuration
 type Server struct {
-	Port    int    `yaml:"port" json:"port" mapstructure:"port"`
 	Timeout string `yaml:"timeout" json:"timeout" mapstructure:"timeout"`
+	Port    int    `yaml:"port" json:"port" mapstructure:"port"`
 }
 
 // GetConfig retrieves the Viper configuration for the service

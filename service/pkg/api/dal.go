@@ -50,7 +50,6 @@ type MongoQueryResult struct {
 // DAL Data Access Layer struct for maintaining and managing
 // data store connections for Stilla
 type DAL struct {
-	Collection    string                  `json:"collection,omitempty"`
 	Cache         *persistence.RedisStore `json:"cache"`
 	Config        *svcmodels.Config       `json:"config"`
 	Database      *db.Conn                `json:"database"`
@@ -58,8 +57,9 @@ type DAL struct {
 	DocumentStore *mongo.Client           `json:"document_store"`
 	Logger        *zap.SugaredLogger      `json:"logger"`
 	Producer      *kafka.Producer         `json:"producer"`
-	SessionKey    string                  `json:"session_key"`
 	APM           *newrelic.Application   `json:"apm"`
+	Collection    string                  `json:"collection,omitempty"`
+	SessionKey    string                  `json:"session_key"`
 }
 
 // AuditEvent audit event struct for sending messages of service events

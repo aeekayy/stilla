@@ -19,18 +19,17 @@ import (
 
 // ConfigResponse ...
 type ConfigResponse struct {
-	ID *primitive.ObjectID `json:"ID" bson:"_id,omitempty"`
-	// Unique name for the configuration
-	ConfigName string        `json:"config_name" bson:"config_name"`
-	CreatedBy  string        `json:"created_by" bson:"created_by"`
-	Config     ConfigVersion `json:"config,omitempty" bson:"config"`
-	ConfigID   string        `json:"config_id" bson:"config_id"`
-	Host       string        `json:"host" bson:"host"`
-	Parents    []string      `json:"parents,omitempty" bson:"parents,omitempty"`
-	Tags       []string      `form:"tags" json:"tags" yaml:"tags" bson:"tags"`
-	Version    int32         `json:"version" bson:"version"`
-	Created    time.Time     `json:"created",bson:"created"`
-	Modified   time.Time     `json:"modified",bson:"modified"`
+	Created    time.Time           `json:"created",bson:"created"`
+	Modified   time.Time           `json:"modified",bson:"modified"`
+	ID         *primitive.ObjectID `json:"ID" bson:"_id,omitempty"`
+	Config     ConfigVersion       `json:"config,omitempty" bson:"config"`
+	ConfigName string              `json:"config_name" bson:"config_name"`
+	CreatedBy  string              `json:"created_by" bson:"created_by"`
+	ConfigID   string              `json:"config_id" bson:"config_id"`
+	Host       string              `json:"host" bson:"host"`
+	Parents    []string            `json:"parents,omitempty" bson:"parents,omitempty"`
+	Tags       []string            `form:"tags" json:"tags" yaml:"tags" bson:"tags"`
+	Version    int32               `json:"version" bson:"version"`
 }
 
 // Ingest ingest data from a BSON map

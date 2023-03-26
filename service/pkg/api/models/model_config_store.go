@@ -18,12 +18,11 @@ import (
 
 // ConfigStore ...
 type ConfigStore struct {
-	ID primitive.ObjectID `json:"id,omitempty",bson:"_id"`
-	// Unique name for the configuration
-	ConfigName    string               `json:"config_name",bson:"config_name"`
-	Owner         string               `json:"owner",bson:"owner"`
-	ConfigVersion ConfigVersion        `json:"config_version",bson:"config_version"`
-	Parents       []primitive.ObjectID `json:"parents,omitempty",bson:"parents,omitempty"`
 	Created       time.Time            `json:"created,omitempty",bson:"created,omitempty"`
 	Modified      time.Time            `json:"modified,omitempty",bson:"modified"`
+	ConfigVersion ConfigVersion        `json:"config_version",bson:"config_version"`
+	ConfigName    string               `json:"config_name",bson:"config_name"`
+	Owner         string               `json:"owner",bson:"owner"`
+	Parents       []primitive.ObjectID `json:"parents,omitempty",bson:"parents,omitempty"`
+	ID            primitive.ObjectID   `json:"id,omitempty",bson:"_id"`
 }

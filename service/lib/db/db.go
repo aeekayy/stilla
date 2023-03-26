@@ -52,11 +52,11 @@ func (d *Conn) QueryRow(ctx context.Context, sql string, optionsAndArgs ...any) 
 
 // APIKey ApiKey for authentication
 type APIKey struct {
-	ID      uuid.UUID `yaml:"id" json:"id" sql:"id"`
-	Name    string    `yaml:"name" json:"name" sql:"name"`
-	Role    uuid.UUID `yaml:"role" json:"role" sql:"role"`
 	Created time.Time `yaml:"created" json:"created" sql:"created"`
 	Updated time.Time `yaml:"updated" json:"updated" sql:"updated"`
+	Name    string    `yaml:"name" json:"name" sql:"name"`
+	ID      uuid.UUID `yaml:"id" json:"id" sql:"id"`
+	Role    uuid.UUID `yaml:"role" json:"role" sql:"role"`
 }
 
 // APIKey API key for the application. This needs to move
