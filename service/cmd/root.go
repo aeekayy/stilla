@@ -1,6 +1,5 @@
 /*
 Copyright © 2023 Farye Nwede <farye@aeekay.com>
-
 */
 package cmd
 
@@ -8,18 +7,17 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	
+
 	"github.com/aeekayy/stilla/service/pkg/service"
 )
 
 var (
-	configFile string
+	configFile     string
 	cpuProfile     bool
 	memProfile     bool
 	cpuProfileFile string
 	memProfileFile string
 )
-
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{

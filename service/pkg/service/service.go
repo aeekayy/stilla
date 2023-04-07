@@ -20,18 +20,19 @@ const (
 )
 
 type Service struct {
-	Name		string		`yaml:"name" json:"name"`
-	ConfigFile	string		`yaml:"config_file" json:"config_file"`
-	DomainName	string		`yaml:"domain_name" json:"domain_name"`
+	Name       string `yaml:"name" json:"name"`
+	ConfigFile string `yaml:"config_file" json:"config_file"`
+	DomainName string `yaml:"domain_name" json:"domain_name"`
 }
 
 func NewService(configFile string) *Service {
 	return &Service{
-		Name: "stilla",
+		Name:       "stilla",
 		ConfigFile: configFile,
 		DomainName: defaultDomainName,
 	}
 }
+
 // Start starts the service
 func (s *Service) Start() error {
 	ctx := context.Background()

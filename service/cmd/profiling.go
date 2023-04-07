@@ -1,6 +1,5 @@
 /*
 Copyright © 2023 Farye Nwede <farye@aeekay.com>
-
 */
 package cmd
 
