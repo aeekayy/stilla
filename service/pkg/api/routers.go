@@ -26,10 +26,10 @@ const hostKey = "host"
 
 // Route is the information for every URI.
 type Route struct {
-	HandlerFunc func(*DAL) gin.HandlerFunc
 	Name        string
 	Method      string
 	Pattern     string
+	HandlerFunc func(*DAL) gin.HandlerFunc
 }
 
 // Routes is the list of the generated Route.
