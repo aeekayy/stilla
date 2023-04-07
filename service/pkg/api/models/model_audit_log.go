@@ -16,9 +16,9 @@ import (
 
 // AuditLog ...
 type AuditLog struct {
+	Created  time.Time              `json:"created,omitempty"`
+	Body     map[string]interface{} `json:"body,omitempty"`
 	ID       string                 `json:"id,omitempty"`
 	Service  string                 `json:"service,omitempty"`
 	Funcname string                 `json:"funcname,omitempty"`
-	Body     map[string]interface{} `json:"body,omitempty"`
-	Created  time.Time              `json:"created,omitempty"`
 }

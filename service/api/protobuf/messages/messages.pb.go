@@ -75,16 +75,14 @@ func (AuditLog_MessageType) EnumDescriptor() ([]byte, []int) {
 // AuditLog ...
 type AuditLog struct {
 	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
+	Message       *structpb.Struct       `protobuf:"bytes,5,opt,name=message,proto3" json:"message,omitempty"`
+	Sent          *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=sent,proto3" json:"sent,omitempty"`
+	Topic         string                 `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
+	FuncName      string                 `protobuf:"bytes,2,opt,name=funcName,proto3" json:"funcName,omitempty"`
+	Service       string                 `protobuf:"bytes,3,opt,name=service,proto3" json:"service,omitempty"`
 	unknownFields protoimpl.UnknownFields
-
-	Topic       string               `protobuf:"bytes,1,opt,name=topic,proto3" json:"topic,omitempty"`
-	FuncName    string               `protobuf:"bytes,2,opt,name=funcName,proto3" json:"funcName,omitempty"`
-	Service     string               `protobuf:"bytes,3,opt,name=service,proto3" json:"service,omitempty"`
-	MessageType AuditLog_MessageType `protobuf:"varint,4,opt,name=messageType,proto3,enum=tutorial.AuditLog_MessageType" json:"messageType,omitempty"`
-	Message     *structpb.Struct     `protobuf:"bytes,5,opt,name=message,proto3" json:"message,omitempty"`
-	// repeated google.protobuf.Any message = 5;
-	Sent *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=sent,proto3" json:"sent,omitempty"`
+	sizeCache     protoimpl.SizeCache
+	MessageType   AuditLog_MessageType `protobuf:"varint,4,opt,name=messageType,proto3,enum=tutorial.AuditLog_MessageType" json:"messageType,omitempty"`
 }
 
 // Reset ...

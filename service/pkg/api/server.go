@@ -50,12 +50,12 @@ var (
 // HTTPServer represents a web server
 type HTTPServer struct {
 	Context    context.Context
-	DomainName string             `json:"domain_name",yaml:"domain_name"`
 	Engine     *gin.Engine        `json:"engine",yaml:"engine"`
-	Secure     bool               `json:"secure",yaml:"secure"`
 	Logger     *zap.SugaredLogger `json:"logger",yaml:"logger"`
 	server     *http.Server       `json:"server",yaml:"server"`
 	config     models.Server      `json:"config",yaml:"config"`
+	DomainName string             `json:"domain_name",yaml:"domain_name"`
+	Secure     bool               `json:"secure",yaml:"secure"`
 }
 
 // Get returns a new web server leveraging the service logger
