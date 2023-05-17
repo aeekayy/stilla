@@ -1,3 +1,4 @@
+// Package cmd CLI for Stilla
 /*
 Copyright © 2023 Farye Nwede <farye@aeekay.com>
 */

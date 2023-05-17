@@ -60,6 +60,7 @@ type DAL struct {
 	APM           *newrelic.Application   `json:"apm"`
 	Collection    string                  `json:"collection,omitempty"`
 	SessionKey    string                  `json:"session_key"`
+	CacheEnabled  bool                    `json:"cache_enabled"`
 }
 
 // AuditEvent audit event struct for sending messages of service events
@@ -88,6 +89,7 @@ func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Applic
 		Producer:      producer,
 		SessionKey:    sessionKey,
 		APM:           apm,
+		CacheEnabled:  true, // default the cache to 'true' for now. TODO: Make this configurable.
 	}
 }
 
@@ -300,7 +302,11 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	d.Logger.Infof("inserted configVersion %s", configID)
 	d.Logger.Infof("inserted config object %s", configID)
 
-	return configID, nil
+	// write the configuration to the cache
+	configResult := qrConfig.Result
+	err = d.writeToCache(configID, hostID, configResult.(bson.M))
+
+	return configID, err
 }
 
 // GetConfig returns a Config with the latest version of the ConfigVersion
@@ -321,35 +327,14 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	// and Database.Collection method
 	// check the cache first
 	d.EmitMessage("config.audit", "GetConfig", requestDetails)
-	var resp bson.M
-	var respEnc string
-	var hostPrefix string
-	if hostID != "" {
-		hostPrefix = fmt.Sprintf("_%s", hostID)
-	}
-	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
-	err := d.Cache.Get(cacheKey, &respEnc)
 
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
-
+	cacheHit, err := d.readFromCache(configID, hostID)
 	if err == nil {
-		bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
-		if err != nil {
-			d.Logger.Errorf("unable to retrieve config: %v", err)
-			return configResponse, fmt.Errorf("unable to retrieve config: %v", err)
-		}
-		err = bson.Unmarshal(bsonBin, &resp)
-		if err != nil {
-			d.Logger.Errorf("unable to retrieve config: %v", err)
-			return configResponse, fmt.Errorf("unable to retrieve config: %v", err)
-		}
-		logLine := utils.SanitizeLogMessageF("cache hit for %s", cacheKey)
-		d.Logger.Info(logLine)
-		configResponse.Ingest(&resp)
+		configResponse.Ingest(cacheHit)
 		return configResponse, nil
 	} else if err != persistence.ErrCacheMiss {
-		d.Logger.Errorf("unable to retrieve config: %v", err)
-		return configResponse, fmt.Errorf("unable to retrieve config: %v", err)
+		return configResponse, err
 	}
 
 	var result bson.M
@@ -396,21 +381,9 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	// TODO fix the response. The config version is empty
 	configResponse.Ingest(&result)
 
-	logLine := utils.SanitizeLogMessage("setting cache for %s", cacheKey)
-	d.Logger.Infof(logLine)
-	bsonBin, err := bson.Marshal(result)
-	if err != nil {
-		d.Logger.Errorf("error writing to cache: %v", err)
-		return configResponse, fmt.Errorf("error writing to the cache %s", err)
-	}
-	cacheEnc := b64.StdEncoding.EncodeToString(bsonBin)
-	err = d.Cache.Set(cacheKey, cacheEnc, time.Hour)
-	if err != nil {
-		d.Logger.Errorf("error writing to cache: %v", err)
-		return configResponse, fmt.Errorf("error writing to the cache %s", err)
-	}
+	err = d.writeToCache(configID, hostID, result)
 
-	return configResponse, nil
+	return configResponse, err
 }
 
 // GetConfigs returns a paginated slice of Configs from the document store
@@ -676,4 +649,74 @@ func ValidateToken(dal *DAL, hostID string, token string) (string, bool, error) 
 	}
 
 	return "", false, fmt.Errorf("unable to retrieve host key: %s", err)
+}
+
+// readFromCache reads a configuration from the cache
+func (d *DAL) readFromCache(configID, hostID string) (*bson.M, error) {
+	var cacheValue *bson.M
+	var respEnc string
+	var hostPrefix string
+	var resp bson.M
+
+	// if the cache is not enabled. Skip all of this.
+	if !d.CacheEnabled {
+		// TODO: this should not be an error
+		return cacheValue, fmt.Errorf("the cache is not enabled")
+	}
+
+	if hostID != "" {
+		hostPrefix = fmt.Sprintf("_%s", hostID)
+	}
+
+	// set the cache key
+	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
+	err := d.Cache.Get(cacheKey, &respEnc)
+
+	if err == nil {
+		bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
+		if err != nil {
+			d.Logger.Errorf("unable to retrieve config: %v", err)
+			return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
+		}
+		err = bson.Unmarshal(bsonBin, resp)
+		if err != nil {
+			d.Logger.Errorf("unable to retrieve config: %v", err)
+			return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
+		}
+	} else if err != persistence.ErrCacheMiss {
+		d.Logger.Errorf("unable to retrieve config: %v", err)
+		return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
+	}
+
+	logLine := utils.SanitizeLogMessageF("cache hit for %s", cacheKey)
+	d.Logger.Info(logLine)
+	return cacheValue, nil
+}
+
+// writeToCache writes a configuration to the cache
+func (d *DAL) writeToCache(configID, hostID string, result bson.M) error {
+	var hostPrefix string
+
+	if hostID != "" {
+		hostPrefix = fmt.Sprintf("_%s", hostID)
+	}
+
+	// set the cache key
+	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
+
+	logLine := utils.SanitizeLogMessage("setting cache for %s", cacheKey)
+	d.Logger.Infof(logLine)
+	bsonBin, err := bson.Marshal(result)
+	if err != nil {
+		d.Logger.Errorf("error writing to cache: %v", err)
+		return fmt.Errorf("error writing to the cache %s", err)
+	}
+	cacheEnc := b64.StdEncoding.EncodeToString(bsonBin)
+	err = d.Cache.Set(cacheKey, cacheEnc, time.Hour)
+	if err != nil {
+		d.Logger.Errorf("error writing to cache: %v", err)
+		return fmt.Errorf("error writing to the cache %s", err)
+	}
+
+	return nil
 }
