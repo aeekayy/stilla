@@ -23,6 +23,19 @@ type Config struct {
 	Audit       bool                   `yaml:"audit" json:"audit" mapstructure:"audit"`
 }
 
+// NewConfig returns an empty configuration 
+func NewConfig() *Config {
+	kafkaCfg := make(map[string]interface{})
+	serverCfg := Server{
+		Port: 8080,
+	}
+
+	return &Config{
+		Kafka: kafkaCfg,
+		Audit: false,
+		Server: serverCfg,
+	}
+}
 // SentryConfig configuration for Sentry
 type SentryConfig struct {
 	DSN     string `yaml:"dsn" json:"dsn" mapstructure:"dsn"`
@@ -120,7 +133,7 @@ func GetConfig(in string) (*Config, error) {
 		viper.SetEnvPrefix("stilla")
 		viper.AutomaticEnv()
 	case error:
-		return nil, fmt.Errorf("%v, %v", t, err)
+		return nil, fmt.Errorf("%v", t)
 	default:
 	}
 

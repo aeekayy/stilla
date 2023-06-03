@@ -12,6 +12,8 @@ go_binary(
 go_library(
     name = "service_lib",
     srcs = ["main.go"],
+    goarch = ["aarch64", "amd64"],
+    goos = "linux",
     importpath = "github.com/aeekayy/stilla/service",
     deps = [
         "//service/pkg/api",
