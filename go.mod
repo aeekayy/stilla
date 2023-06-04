@@ -3,6 +3,7 @@ module github.com/aeekayy/stilla
 go 1.20
 
 require (
+	github.com/alicebob/miniredis/v2 v2.30.3
 	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/getsentry/sentry-go v0.18.0
 	github.com/gin-contrib/cache v1.2.0
@@ -27,7 +28,9 @@ require (
 )
 
 require (
+	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
 	github.com/andres-erbsen/clock v0.0.0-20160526145045-9e14626cd129 // indirect
+	github.com/benbjohnson/clock v1.1.0 // indirect
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d // indirect
 	github.com/bytedance/sonic v1.8.0 // indirect
@@ -79,6 +82,7 @@ require (
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
+	github.com/yuin/gopher-lua v1.1.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/arch v0.0.0-20210923205945-b76863e36670 // indirect

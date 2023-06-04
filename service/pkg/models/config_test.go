@@ -1,22 +1,22 @@
-// Package models configuration model 
-package models 
+// Package models configuration model
+package models
 
 import (
 	"encoding/json"
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/stretchr/testify/assert"
 )
 
-var(
+var (
 	testKafkaConfig = map[string]string{
 		"bootstrap.servers": "smitty:9092,lucky:9092",
 		"security.protocol": "SASL_SSL",
-		"sasl.mechanisms": "PLAIN",
-		"sasl.username": "test",
-		"sasl.password": "kafka",
+		"sasl.mechanisms":   "PLAIN",
+		"sasl.username":     "test",
+		"sasl.password":     "kafka",
 	}
 )
 
@@ -27,13 +27,13 @@ func GetTestConfig() *Config {
 		Kafka: src,
 		Audit: false,
 		Server: Server{
-			Port: 8080, 
+			Port: 8080,
 		},
 		Database: Database{
 			Username: "postgres",
 			Password: "postgres",
-			Host: "localhost",
-			Name: "stilla",
+			Host:     "localhost",
+			Name:     "stilla",
 		},
 	}
 
@@ -46,7 +46,7 @@ func GetTestKafkaConfig() kafka.ConfigMap {
 	for k, v := range testKafkaConfig {
 		cm.SetKey(k, v)
 	}
-	
+
 	return cm
 }
 
@@ -65,14 +65,14 @@ func TestNewConfig(t *testing.T) {
 	kafkaCfg := make(map[string]interface{})
 	testConfig := Config{
 		Kafka: kafkaCfg,
-		Audit: false, 
+		Audit: false,
 		Server: Server{
 			Port: 8080,
 		},
 	}
 
 	config := NewConfig()
-	
+
 	assert.Equal(t, *config, testConfig, "the configurations should match.")
 }
 
@@ -109,7 +109,7 @@ func TestFailNoFileGetConfig(t *testing.T) {
 
 	config, err := GetConfig(fileIn)
 
-	// assert for nil 
+	// assert for nil
 	assert.Nil(t, config)
 
 	// assert equality for error
@@ -126,53 +126,53 @@ func TestPassGetConfig(t *testing.T) {
 	assert.Nil(t, err)
 
 	checkConfig := &Config{
-		Kafka: map[string]interface {}{
-			"bootstrap": map[string]interface {}{
-				"servers":"localhost:9092",
+		Kafka: map[string]interface{}{
+			"bootstrap": map[string]interface{}{
+				"servers": "localhost:9092",
 			},
-			"session": map[string]interface {}{
-				"timeout": map[string]interface {}{
-					"ms":45000,
+			"session": map[string]interface{}{
+				"timeout": map[string]interface{}{
+					"ms": 45000,
 				},
 			},
-		}, 
+		},
 		Database: Database{
-			Username: "postgres",
-			Password: "postgres",
-			Host: "localhost",
-			Name: "stilla",
+			Username:   "postgres",
+			Password:   "postgres",
+			Host:       "localhost",
+			Name:       "stilla",
 			Parameters: "",
 		},
 		Cache: Cache{
-			Host: "localhost",
+			Host:     "localhost",
 			Username: "default",
 			Password: "",
-			Type: "redis",
+			Type:     "redis",
 		},
 		Server: Server{
 			Timeout: "3s",
-			Port: 8080,
+			Port:    8080,
 		},
 		Sentry: SentryConfig{
-			DSN: "", 
+			DSN:     "",
 			Enabled: false,
 		},
 		Environment: "dev",
-		SessionKey: "",
+		SessionKey:  "",
 		DocDB: DocumentDatabase{
 			Username: "mongo",
 			Password: "mongo",
-			Host: "localhost",
-			Name: "configdb",
-			Timeout: "",
-			DNSSeed: false,
+			Host:     "localhost",
+			Name:     "configdb",
+			Timeout:  "",
+			DNSSeed:  false,
 		},
 		NewRelic: NewRelicConfig{
-			AppName:"",
-			License:"",
-			Enabled:false,
-			AppLogForwarding:false,
-		}, 
+			AppName:          "",
+			License:          "",
+			Enabled:          false,
+			AppLogForwarding: false,
+		},
 		Audit: true,
 	}
 

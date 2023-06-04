@@ -329,9 +329,9 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	d.EmitMessage("config.audit", "GetConfig", requestDetails)
 
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
-	cacheHit, err := d.readFromCache(configID, hostID)
-	if err == nil {
-		configResponse.Ingest(cacheHit)
+	cacheHit, cacheValue, err := d.readFromCache(configID, hostID)
+	if cacheHit {
+		configResponse.Ingest(cacheValue)
 		return configResponse, nil
 	} else if err != persistence.ErrCacheMiss {
 		return configResponse, err
@@ -379,7 +379,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	}
 
 	// TODO fix the response. The config version is empty
-	configResponse.Ingest(&result)
+	configResponse.Ingest(result)
 
 	err = d.writeToCache(configID, hostID, result)
 
@@ -652,57 +652,56 @@ func ValidateToken(dal *DAL, hostID string, token string) (string, bool, error) 
 }
 
 // readFromCache reads a configuration from the cache
-func (d *DAL) readFromCache(configID, hostID string) (*bson.M, error) {
-	var cacheValue *bson.M
+// response: cachehit, body, err
+func (d *DAL) readFromCache(configID, hostID string) (bool, bson.M, error) {
+	var cacheValue bson.M
 	var respEnc string
-	var hostPrefix string
-	var resp bson.M
+	cacheHit := false
 
 	// if the cache is not enabled. Skip all of this.
 	if !d.CacheEnabled {
 		// TODO: this should not be an error
-		return cacheValue, fmt.Errorf("the cache is not enabled")
+		return cacheHit, cacheValue, fmt.Errorf("the cache is not enabled")
 	}
 
-	if hostID != "" {
-		hostPrefix = fmt.Sprintf("_%s", hostID)
-	}
-
-	// set the cache key
-	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
+	cacheKey := getCacheKey(configID, hostID)
 	err := d.Cache.Get(cacheKey, &respEnc)
 
-	if err == nil {
-		bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
-		if err != nil {
-			d.Logger.Errorf("unable to retrieve config: %v", err)
-			return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
-		}
-		err = bson.Unmarshal(bsonBin, resp)
-		if err != nil {
-			d.Logger.Errorf("unable to retrieve config: %v", err)
-			return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
-		}
-	} else if err != persistence.ErrCacheMiss {
+	if err == persistence.ErrCacheMiss {
+		d.Logger.Errorf("cache miss: %v", err)
+		return cacheHit, cacheValue, fmt.Errorf("cache miss: %v", err)
+	} else if err != nil {
 		d.Logger.Errorf("unable to retrieve config: %v", err)
-		return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
+		return cacheHit, cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
 	}
+
+	bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
+	if err != nil {
+		d.Logger.Errorf("error decoding string: %v", err)
+		return cacheHit, cacheValue, fmt.Errorf("error decoding string: %v", err)
+	}
+	err = bson.Unmarshal(bsonBin, &cacheValue)
+	if err != nil {
+		d.Logger.Errorf("unable to unmarshal: %v", err)
+		return cacheHit, cacheValue, fmt.Errorf("unable to unmarshal: %v", err)
+	}
+
+	cacheHit = true
 
 	logLine := utils.SanitizeLogMessageF("cache hit for %s", cacheKey)
 	d.Logger.Info(logLine)
-	return cacheValue, nil
+	return cacheHit, cacheValue, nil
 }
 
 // writeToCache writes a configuration to the cache
 func (d *DAL) writeToCache(configID, hostID string, result bson.M) error {
-	var hostPrefix string
-
-	if hostID != "" {
-		hostPrefix = fmt.Sprintf("_%s", hostID)
+	if configID == "" {
+		d.Logger.Errorf("can not set cache for empty config ID")
+		return fmt.Errorf("can not set cache for empty config ID")
 	}
 
 	// set the cache key
-	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
+	cacheKey := getCacheKey(configID, hostID)
 
 	logLine := utils.SanitizeLogMessage("setting cache for %s", cacheKey)
 	d.Logger.Infof(logLine)
@@ -719,4 +718,16 @@ func (d *DAL) writeToCache(configID, hostID string, result bson.M) error {
 	}
 
 	return nil
+}
+
+// getCacheKey standardize the cache key for configs
+func getCacheKey(configID, hostID string) string {
+	var hostPrefix string
+
+	if hostID != "" {
+		hostPrefix = fmt.Sprintf("_%s", hostID)
+	}
+
+	// return the cache key
+	return fmt.Sprintf("config_%s%s", configID, hostPrefix)
 }

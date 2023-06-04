@@ -74,6 +74,8 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 	cachePass := config.Cache.Password
 	cacheHost := config.Cache.Host
 
+	// TODO: Switch to NewRedisCacheWithPool
+	// https://github.com/gin-contrib/cache/blob/v1.2.0/persistence/redis.go#L55-L57
 	store := persistence.NewRedisCache(cacheHost, cachePass, time.Second)
 
 	if err != nil {
@@ -114,7 +116,7 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 			return nil, err
 		}
 	}
-	
+
 	collectionName := "config"
 
 	dal := NewDAL(&ctx, sugar, nrapp, config, dbConn, mongoConn, store, kafkaProducer, collectionName, config.SessionKey)

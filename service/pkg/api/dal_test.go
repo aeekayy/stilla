@@ -6,27 +6,29 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	"github.com/gin-contrib/cache/persistence"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/mongo-driver/bson"
-	"github.com/gin-contrib/cache/persistence"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/aeekayy/stilla/service/pkg/models"
 )
 
 // MockCache mocks the Redis cache for the DAL
-type MockCache struct{
+type MockCache struct {
 	mock.Mock
 	persistence.RedisStore
 }
 
-type MockDAL struct{
+type MockDAL struct {
 	mock.Mock
-	Cache		*MockCache
-	Config		*models.Config
-	Context		context.Context
-	Collection	string
-	SessionKey	string
+	Cache      *MockCache
+	Config     *models.Config
+	Context    context.Context
+	Collection string
+	SessionKey string
 }
 
 // mocks the retrieval of a cache by the key cacheKey
@@ -54,7 +56,7 @@ func (m *MockCache) Add(key string, value interface{}, expire time.Duration) err
 
 // Replace sets a new value for the cache key only if it already exists. Returns an
 // error if it does not.
-func (m *MockCache) Replace(key string, data interface{}, expire time.Duration)  error {
+func (m *MockCache) Replace(key string, data interface{}, expire time.Duration) error {
 	args := m.Called(key, data, expire)
 
 	return args.Error(0)
@@ -89,45 +91,99 @@ func (m *MockCache) Flush() error {
 }
 
 // setupDep setup the dependencies for DAL testing
-func setupDep() *DAL {
+func setupDep(t *testing.T) *DAL {
+	// logger for Zap
+	logger := zaptest.NewLogger(t)
+	sugar := logger.Sugar()
+
+	// setup the configuration
 	config := models.NewConfig()
 	collection := "configdb"
 	sessionKey := "testKey"
 
 	ctx := context.Background()
 	dal := new(DAL)
-	testCache := new(MockCache)
+	// testCache := new(MockCache)
 
-	var response string
-	cacheKey := "config_configID_hostID"
-	testCache.On("Get", cacheKey, &response).Return(nil).Run(func(args mock.Arguments) {
-		arg := args.Get(1).(*string)
-		resp := "test"
-		arg = &resp
-	})
+	s := miniredis.RunT(t)
+	redisPwd := "redis"
+	s.RequireAuth(redisPwd)
+	config.Cache.Host = s.Addr()
+	config.Cache.Username = "default"
+	config.Cache.Password = redisPwd
+	testCache := persistence.NewRedisCache(config.Cache.Host, config.Cache.Password, time.Second)
+
+	// var response string
+	// cacheKey := "config_configID_hostID"
 
 	dal.Cache = testCache
 	dal.Config = config
+	dal.Logger = sugar
 	dal.SessionKey = sessionKey
 	dal.Collection = collection
+	dal.CacheEnabled = true
 	dal.Context = &ctx
 
 	return dal
 }
 
-// TestReadFromCache validates a successful read from the cache
-func TestReadFromCache(t *testing.T) {
+// TestReadFromCacheDisabled validates an error when the cache is disabled
+func TestReadFromCacheDisabled(t *testing.T) {
 	configID := "configID"
 	hostID := "hostID"
 
-	var expected *bson.M 
+	dal := setupDep(t)
+	dal.CacheEnabled = false
 
-	dal := setupDep()
+	_, _, err := dal.readFromCache(configID, hostID)
 
-	bsonVal, err := dal.readFromCache(configID, hostID)
+	// make sure err is not nil
+	assert.NotNil(t, err)
+}
 
-	// make sure err is nil
-	assert.Nil(t, err)
+// TestCache validates a successful write to the cache
+func TestCache(t *testing.T) {
+	basicBsonM := bson.M{"foo": "bar", "hello": "world"}
 
-	assert.Equal(t, expected, bsonVal, "the cache values should match.")
+	table := []struct {
+		name             string
+		configID         string
+		hostID           string
+		writeToCache     bool
+		writeCacheErr    bool
+		readCacheErr     bool
+		expectedCacheHit bool
+	}{
+		{"WriteToCachePass", "configTest", "testhost", true, false, false, true}, // tests read from cache too
+		{"WriteToCachePassEmptyHost", "configTest", "", true, false, false, true},
+		{"WriteToCacheFailEmptyConfig", "", "testHost", true, true, true, false},
+		{"ReadFromCacheMiss", "configTest", "testhost", false, false, true, false},
+	}
+
+	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			dal := setupDep(t)
+
+			if tc.writeToCache {
+				err := dal.writeToCache(tc.configID, tc.hostID, basicBsonM)
+
+				if tc.writeCacheErr {
+					assert.NotNil(t, err)
+				} else {
+					assert.Nil(t, err)
+				}
+			}
+
+			cacheHit, result, err := dal.readFromCache(tc.configID, tc.hostID)
+
+			assert.Equal(t, tc.expectedCacheHit, cacheHit, "expected the cache hit result to match.")
+
+			if tc.readCacheErr {
+				assert.NotNil(t, err)
+			} else {
+				assert.Nil(t, err)
+				assert.Equal(t, basicBsonM, result, "the cache values should match.")
+			}
+		})
+	}
 }
