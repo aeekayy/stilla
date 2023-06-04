@@ -91,7 +91,7 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 	var kafkaProducer *kafka.Producer
 	if config.Audit {
 		// Kafka producer
-		kafkaProducer, err = kafka.NewProducer(config.GetKafkaConfig())
+		kafkaProducer, err = kafka.NewProducer(&config.GetKafkaConfig())
 		sugar.Infof("%s", config.Kafka)
 
 		if err != nil {

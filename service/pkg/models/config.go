@@ -40,10 +40,10 @@ type NewRelicConfig struct {
 // GetKafkaConfig retrieves a Kafka.ConfigMap compatible struct from
 // our configuration. Viper supports nested configuration. However, we
 // need a flatten struct for Kafka
-func (c *Config) GetKafkaConfig() *kafka.ConfigMap {
-	cm := &kafka.ConfigMap{}
+func (c *Config) GetKafkaConfig() kafka.ConfigMap {
+	cm := kafka.ConfigMap{}
 
-	flattenKafkaConfigMap("", c.Kafka, cm)
+	flattenKafkaConfigMap("", c.Kafka, &cm)
 
 	return cm
 }
@@ -57,11 +57,12 @@ func flattenKafkaConfigMap(prefix string, src map[string]interface{}, cm *kafka.
 	}
 
 	for k, v := range src {
+		mapPrefix := prefix + k
 		switch child := v.(type) {
 		case map[string]interface{}:
-			flattenKafkaConfigMap(prefix+k, child, cm)
+			flattenKafkaConfigMap(mapPrefix, child, cm)
 		default:
-			cm.SetKey(prefix+k, child)
+			cm.SetKey(mapPrefix, child)
 		}
 	}
 }
