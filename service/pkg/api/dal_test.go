@@ -10,6 +10,7 @@ import (
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
+	// "go.mongodb.org/mongo-driver/mongo/integration/mtest"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/aeekayy/stilla/service/pkg/models"
@@ -48,6 +49,9 @@ func setupDep(t *testing.T) *DAL {
 	dal.Collection = collection
 	dal.CacheEnabled = true
 	dal.Context = &ctx
+
+	// add mongo
+	// https://medium.com/@victor.neuret/mocking-the-official-mongo-golang-driver-5aad5b226a78
 
 	return dal
 }
