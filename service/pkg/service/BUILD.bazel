@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "service",
+    srcs = ["service.go"],
+    importpath = "github.com/aeekayy/stilla/service/pkg/service",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//service/pkg/api",
+        "//service/pkg/models",
+        "@com_github_getsentry_sentry_go//:sentry-go",
+        "@org_uber_go_zap//:zap",
+    ],
+)

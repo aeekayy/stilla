@@ -1,12 +1,6 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
-    name = "lib",
-    srcs = ["db.go"],
-    visibility = ["//visibility:public"],
-)
-
-go_library(
     name = "db",
     srcs = ["db.go"],
     importpath = "github.com/aeekayy/stilla/service/lib/db",
@@ -27,7 +21,7 @@ go_test(
     srcs = ["db_test.go"],
     embed = [":db"],
     deps = [
-        "//service/pkg/utils:lib",
+        "//service/pkg/utils",
         "@com_github_stretchr_testify//assert",
     ],
 )

@@ -93,6 +93,7 @@ func TestCache(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dal := setupDep(t)
 
+			// write to the cache if we want to test this path
 			if tc.writeToCache {
 				err := dal.writeToCache(tc.configID, tc.hostID, basicBsonM)
 
@@ -103,10 +104,16 @@ func TestCache(t *testing.T) {
 				}
 			}
 
+			// always read from the cache. We want to always test cache reads
 			cacheHit, result, err := dal.readFromCache(tc.configID, tc.hostID)
 
 			assert.Equal(t, tc.expectedCacheHit, cacheHit, "expected the cache hit result to match.")
 
+			// if there's an cache error, 
+			// make sure that it's not nil 
+			// if there's no cache error, make sure that
+			// the err is nil and make sure that the 
+			// results match
 			if tc.readCacheErr {
 				assert.NotNil(t, err)
 			} else {
