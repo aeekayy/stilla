@@ -9,7 +9,6 @@ import (
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.uber.org/zap/zaptest"
 
