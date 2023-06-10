@@ -75,18 +75,18 @@ func TestCache(t *testing.T) {
 	basicBsonM := bson.M{"foo": "bar", "hello": "world"}
 
 	table := []struct {
-		name             string
-		configID         string
-		hostID           string
-		writeToCache     bool
-		writeCacheErr    bool
-		readCacheErr     bool
-		expectedCacheHit bool
+		name                string
+		configID            string
+		hostID              string
+		writeToCache        bool
+		expectCacheHit      bool
+		expectWriteCacheErr bool
+		expectReadCacheErr  bool
 	}{
-		{"WriteToCachePass", "configTest", "testhost", true, false, false, true}, // tests read from cache too
-		{"WriteToCachePassEmptyHost", "configTest", "", true, false, false, true},
-		{"WriteToCacheFailEmptyConfig", "", "testHost", true, true, true, false},
-		{"ReadFromCacheMiss", "configTest", "testhost", false, false, true, false},
+		{"WriteToCachePass", "configTest", "testhost", true, true, false, false}, // tests read from cache too
+		{"WriteToCachePassEmptyHost", "configTest", "", true, true, false, false},
+		{"WriteToCacheFailEmptyConfig", "", "testHost", true, false, true, true},
+		{"ReadFromCacheMiss", "configTest", "testhost", false, false, false, true},
 	}
 
 	for _, tc := range table {
@@ -97,7 +97,7 @@ func TestCache(t *testing.T) {
 			if tc.writeToCache {
 				err := dal.writeToCache(tc.configID, tc.hostID, basicBsonM)
 
-				if tc.writeCacheErr {
+				if tc.expectWriteCacheErr {
 					assert.NotNil(t, err)
 				} else {
 					assert.Nil(t, err)
@@ -107,14 +107,14 @@ func TestCache(t *testing.T) {
 			// always read from the cache. We want to always test cache reads
 			cacheHit, result, err := dal.readFromCache(tc.configID, tc.hostID)
 
-			assert.Equal(t, tc.expectedCacheHit, cacheHit, "expected the cache hit result to match.")
+			assert.Equal(t, tc.expectCacheHit, cacheHit, "expected the cache hit result to match.")
 
-			// if there's an cache error, 
-			// make sure that it's not nil 
+			// if there's an cache error,
+			// make sure that it's not nil
 			// if there's no cache error, make sure that
-			// the err is nil and make sure that the 
+			// the err is nil and make sure that the
 			// results match
-			if tc.readCacheErr {
+			if tc.expectReadCacheErr {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)

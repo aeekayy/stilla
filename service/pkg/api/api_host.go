@@ -41,7 +41,7 @@ func HostRegister(dal *DAL) gin.HandlerFunc {
 		}
 
 		// Todo replace the response with a struct. Include the host ID in the response
-		c.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusCreated, gin.H{
 			"data": apiKey,
 		})
 	}
