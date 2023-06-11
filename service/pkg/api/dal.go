@@ -52,7 +52,7 @@ type MongoQueryResult struct {
 type DAL struct {
 	Cache         *persistence.RedisStore `json:"cache"`
 	Config        *svcmodels.Config       `json:"config"`
-	Database      *db.Conn                `json:"database"`
+	Database      db.DBIface                `json:"database"`
 	Context       *context.Context        `json:"context"`
 	DocumentStore *mongo.Client           `json:"document_store"`
 	Logger        *zap.SugaredLogger      `json:"logger"`
@@ -77,7 +77,7 @@ type HostCache struct {
 }
 
 // NewDAL returns a new DAL
-func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn *db.Conn, docStore *mongo.Client, store *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
+func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn db.Conn, docStore *mongo.Client, store *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
 	return &DAL{
 		Context:       ctx,
 		Config:        config,
@@ -176,6 +176,8 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	// and Database.Collection method
 	d.EmitMessage("config.audit", "InsertConfig", requestDetails)
 
+	// TODO: Abstract this portion of code
+	// We want to support PostgreSQL in addition to MongoDB
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
 	configVersionCollection := d.DocumentStore.Database(configDB).Collection(configVersionCollectionlection)
 
@@ -328,6 +330,8 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	// check the cache first
 	d.EmitMessage("config.audit", "GetConfig", requestDetails)
 
+	// TODO: Abstract this portion of code
+	// We want to support PostgreSQL in addition to MongoDB
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
 	cacheHit, cacheValue, err := d.readFromCache(configID, hostID)
 	if cacheHit {
@@ -432,6 +436,8 @@ func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req inte
 	findOptions.SetProjection(bson.D{{"config_version", 0}})
 	var results []models.ConfigStore
 
+	// TODO: Abstract this portion of code
+	// We want to support PostgreSQL in addition to MongoDB
 	// see if there's an existing record
 	cursor, err := configCollection.Find(
 		ctx,

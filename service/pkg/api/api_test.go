@@ -18,6 +18,7 @@ import (
 const (
 	pageNotFoundErrMsg = "404 page not found"
 	v1ApiPrefix = "/api/v1"
+	responseLookupPrefix = "lookup:"
 )
 
 // GetTestGinContext creates a Gin context for tests
@@ -57,10 +58,51 @@ func TestAPIRoutes(t *testing.T) {
 	}{
 		{"testPingRoutePositive", http.MethodGet, "/health/", nil, http.StatusOK, "{\"message\":\"pong\"}"},
 		{"testBadPathNegative", http.MethodGet, "/bad-path", nil, http.StatusNotFound, pageNotFoundErrMsg },
-		{"testRegisterHostPositive", http.MethodPost, "/host/register", rbHostRegister, http.StatusCreated, ""},
+		{"testRegisterHostPositive", http.MethodPost, "/host/register", rbHostRegister, http.StatusCreated, fmt.Sprintf("%s%s", responseLookupPrefix, "ApiKey")},
+		{"testRegisterHostNegative", http.MethodPost, "/host/register", nil, http.StatusBadRequest, "{\"error\":\"unable to register host\"}"},
 	}
 
 	for _, tc := range table {
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			fullPath := fmt.Sprintf("%s%s", v1ApiPrefix, tc.path)
+			req, _ := http.NewRequest(tc.method, fullPath, tc.requestBody)
+			router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectResponseCode, w.Code)
+			if strings.HasPrefix(tc.expectResponseBody, responseLookupPrefix) {
+				mDB := dal.Database.(mockDB)
+				value := mDB.Lookup["ApiKey"]
+				expectedResponse := fmt.Sprintf("{\"data\":\"%s\"}", value)
+				assert.Equal(t, expectedResponse, w.Body.String())
+			} else {
+				assert.Equal(t, tc.expectResponseBody, w.Body.String())
+			}
+		})
+	}
+
+	mDB := dal.Database.(mockDB)
+	rbHostLogin := strings.NewReader(fmt.Sprintf(`{ "host": "%s", "apikey": "%s" }`, mDB.Lookup["Hostname"], mDB.Lookup["ApiKey"]))
+	responseHostLogin := fmt.Sprintf(`{"data":"%s"}`, mDB.Lookup["HostID"])
+
+	tableSet2 := []struct {
+		name               string
+		method             string
+		path               string
+		requestBody        io.Reader
+		expectResponseCode int
+		expectResponseBody string
+	}{
+		{"testLoginHostPositive", http.MethodPost, "/host/login", rbHostLogin, http.StatusOK, responseHostLogin },
+		{"testLoginHostNegative", http.MethodPost, "/host/login", nil, http.StatusBadRequest, "{\"error\":\"unable to login host\"}" },
+	}
+
+	type HostLoginIn struct {
+		APIKey string `form:"apikey" json:"apikey" yaml:"apikey"`
+		Host   string `form:"host" json:"host" yaml:"host"`
+	}
+
+	for _, tc := range tableSet2 {
 		t.Run(tc.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
 			fullPath := fmt.Sprintf("%s%s", v1ApiPrefix, tc.path)

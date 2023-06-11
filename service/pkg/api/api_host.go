@@ -66,7 +66,7 @@ func HostLogin(dal *DAL) gin.HandlerFunc {
 
 		if err != nil {
 			dal.Logger.Errorf("unable to login host: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to login host"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unable to login host"})
 			return
 		}
 

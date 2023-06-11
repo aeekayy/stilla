@@ -3,18 +3,75 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/gin-contrib/cache/persistence"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/pashagolub/pgxmock/v2"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 	// "go.mongodb.org/mongo-driver/mongo/integration/mtest"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/aeekayy/stilla/service/pkg/models"
+	// "github.com/aeekayy/stilla/service/lib/db"
 )
+
+// mockDB a mock database implemenation of DBIface
+type mockDB struct {
+	database		pgxmock.PgxPoolIface
+	Lookup			map[string]string
+}
+
+// NewMockDB returns a new mock database 
+func NewMockDB() (mockDB, error) {
+	mock, err := pgxmock.NewPool()
+	if err != nil {
+		return mockDB{}, err
+	}
+
+	m := make(map[string]string)
+
+	return mockDB{
+		database:	mock,
+		Lookup:		m,
+	}, nil
+}
+
+func (m mockDB) Close() {
+	fmt.Println("closing mock postgresql database")
+}
+
+func (m mockDB) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+	return m.database.Exec(ctx, sql, args)
+}
+
+func (m mockDB) Query(ctx context.Context, sql string, optionsAndArgs ...any) (pgx.Rows, error) {
+	return m.database.Query(ctx, sql, optionsAndArgs)
+}
+
+func (m mockDB) QueryRow(ctx context.Context, sql string, optionsAndArgs ...any) pgx.Row {
+	return m.database.QueryRow(ctx, sql, optionsAndArgs)
+}
+
+func (m mockDB) GenerateAPIKey(name string, tags []string) (string, string, error) {
+	hostID := uuid.New().String()
+	apiKey := uuid.New().String()
+	m.Lookup["ApiKey"] = apiKey
+	m.Lookup["HostID"] = hostID
+	m.Lookup["Hostname"] = name
+	return hostID, apiKey, nil
+}
+
+func (m mockDB) ValidateAPIKey(id, token string) (string, error) {
+	return m.Lookup["HostID"], nil
+}
+
 
 // setupDep setup the dependencies for DAL testing
 func setupDep(t *testing.T) *DAL {
@@ -41,6 +98,10 @@ func setupDep(t *testing.T) *DAL {
 
 	// var response string
 	// cacheKey := "config_configID_hostID"
+	pgDB, err := NewMockDB()
+	if err != nil {
+		t.Fatalf("could not create mock psql database: %s", err)
+	}
 
 	dal.Cache = testCache
 	dal.Config = config
@@ -49,6 +110,7 @@ func setupDep(t *testing.T) *DAL {
 	dal.Collection = collection
 	dal.CacheEnabled = true
 	dal.Context = &ctx
+	dal.Database = pgDB
 
 	// add mongo
 	// https://medium.com/@victor.neuret/mocking-the-official-mongo-golang-driver-5aad5b226a78

@@ -24,29 +24,38 @@ var (
 	apiKeyNameBlacklist = []string{"apikey", "name"}
 )
 
+type DBIface interface {
+	Close()
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, optionsAndArgs ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, optionsAndArgs ...any) pgx.Row
+	GenerateAPIKey(name string, tags []string) (string, string, error)
+	ValidateAPIKey(id, token string) (string, error)
+}
+
 // Conn database connection pool and context
 type Conn struct {
 	Pool *pgxpool.Pool
-	Ctx  context.Context
+	Context  context.Context
 }
 
 // Close close the connection pool
-func (d *Conn) Close() {
+func (d Conn) Close() {
 	d.Pool.Close()
 }
 
 // Exec execute a command via the connection pool
-func (d *Conn) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
+func (d Conn) Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error) {
 	return d.Pool.Exec(ctx, sql, args...)
 }
 
 // Query execute a query via the connection pool
-func (d *Conn) Query(ctx context.Context, sql string, optionsAndArgs ...any) (pgx.Rows, error) {
+func (d Conn) Query(ctx context.Context, sql string, optionsAndArgs ...any) (pgx.Rows, error) {
 	return d.Pool.Query(ctx, sql, optionsAndArgs...)
 }
 
 // QueryRow execute a query via the connection pool. Return a row.
-func (d *Conn) QueryRow(ctx context.Context, sql string, optionsAndArgs ...any) pgx.Row {
+func (d Conn) QueryRow(ctx context.Context, sql string, optionsAndArgs ...any) pgx.Row {
 	return d.Pool.QueryRow(ctx, sql, optionsAndArgs...)
 }
 
@@ -84,7 +93,7 @@ func Connect(ctx *context.Context, dbUser, dbPass, dbHost, dbName, dbParams stri
 
 	dbCtx = ctx
 	db.Pool = pool
-	db.Ctx = *ctx
+	db.Context = *ctx
 
 	return db, nil
 }
@@ -140,7 +149,7 @@ func (d *Conn) GetAPIKey(host, keyID string) (APIKey, error) {
 }
 
 // GenerateAPIKey generate an api key and a public key for a new host
-func (d *Conn) GenerateAPIKey(name string, tags []string) (string, string, error) {
+func (d Conn) GenerateAPIKey(name string, tags []string) (string, string, error) {
 	var hostID string
 	var apiKeyID string
 
@@ -148,13 +157,13 @@ func (d *Conn) GenerateAPIKey(name string, tags []string) (string, string, error
 		return "", "", fmt.Errorf("invalid name entered. %s is not allowed", name)
 	}
 
-	err := d.Pool.QueryRow(d.Ctx, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id, token;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&hostID, &apiKeyID)
+	err := d.Pool.QueryRow(d.Context, "INSERT INTO api_keys(name, tags, private_key, salt, role) VALUES($1, $2, $3, $4, $5) RETURNING id, token;", name, tags, "", "", "e3f01984-8185-4829-affe-56b84a9913eb").Scan(&hostID, &apiKeyID)
 
 	return hostID, apiKeyID, err
 }
 
 // ValidateAPIKey validates an API Key for a host
-func (d *Conn) ValidateAPIKey(id, token string) (string, error) {
+func (d Conn) ValidateAPIKey(id, token string) (string, error) {
 	var hostname string
 
 	err := d.Pool.QueryRow(*dbCtx, "SELECT name FROM api_keys WHERE id=$1 and token=$2;", id, token).Scan(&hostname)
@@ -164,7 +173,7 @@ func (d *Conn) ValidateAPIKey(id, token string) (string, error) {
 
 // ValidateConnection validates the pool with a ping
 func (d *Conn) ValidateConnection() error {
-	return d.Pool.Ping(d.Ctx)
+	return d.Pool.Ping(d.Context)
 }
 
 // isValidName checks to see if an api key has a valid name

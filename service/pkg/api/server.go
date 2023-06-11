@@ -119,7 +119,7 @@ func Get(ctx context.Context, sugar *zap.SugaredLogger, domainName string, confi
 
 	collectionName := "config"
 
-	dal := NewDAL(&ctx, sugar, nrapp, config, dbConn, mongoConn, store, kafkaProducer, collectionName, config.SessionKey)
+	dal := NewDAL(&ctx, sugar, nrapp, config, *dbConn, mongoConn, store, kafkaProducer, collectionName, config.SessionKey)
 	router := NewRouter(dal)
 
 	router.Use(cors.New(cors.Config{
