@@ -157,8 +157,9 @@ func (d *DAL) LoginHost(ctx *gin.Context, hostLoginIn models.HostLoginIn, req in
 // InsertConfig insert a configuration object into the document store. This
 // creates a new ConfigVersion object. The ObjectID of the ConfigVersion is then
 // used to update the Config object reference for ConfigVersion
-func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (string, error) {
+func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (string, bool, error) {
 	requestDetails := make(map[string]interface{})
+	upsertedRecord := false
 
 	httpReq := req.(*http.Request)
 	requestDetails["request.method"] = utils.SanitizeMessageValue(httpReq.Method)
@@ -203,7 +204,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 		// ErrNoDocuments means that the filter did not match any documents in
 		// the collection.
 		if err != mongo.ErrNoDocuments {
-			return "", fmt.Errorf("error accessing the collection: %s", err)
+			return "", upsertedRecord, fmt.Errorf("error accessing the collection: %s", err)
 		}
 	}
 
@@ -291,24 +292,33 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 
 	if qrConfigVersion.Error != nil {
 		d.Logger.Errorf("unable to insert configVersion: %v", qrConfigVersion.Error)
-		return "", fmt.Errorf("unable to ingest configVersion object: %s", qrConfigVersion.Error)
+		return "", upsertedRecord, fmt.Errorf("unable to ingest configVersion object: %s", qrConfigVersion.Error)
 	}
 
 	qrConfig := <-chConfig
 
 	if qrConfig.Error != nil {
 		d.Logger.Errorf("unable to insert config: %v", qrConfig.Error)
-		return "", fmt.Errorf("unable to insert config: %s", qrConfig.Error)
+		return "", upsertedRecord, fmt.Errorf("unable to insert config: %s", qrConfig.Error)
 	}
 
 	d.Logger.Infof("inserted configVersion %s", configID)
 	d.Logger.Infof("inserted config object %s", configID)
 
 	// write the configuration to the cache
-	configResult := qrConfig.Result
-	err = d.writeToCache(configID, hostID, configResult.(bson.M))
+	configResult := qrConfig.Result.(*mongo.UpdateResult)
+	if configResult.UpsertedCount != 0 {
+		var cacheResponse bson.M
 
-	return configID, err
+		err = configCollection.FindOne(
+			ctx,
+			bson.D{{"_id", configResult.UpsertedID}},
+		).Decode(&cacheResponse)
+		err = d.writeToCache(configID, hostID, cacheResponse)
+		upsertedRecord = true
+	}
+
+	return configID, upsertedRecord, err
 }
 
 // GetConfig returns a Config with the latest version of the ConfigVersion

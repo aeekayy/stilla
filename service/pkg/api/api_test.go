@@ -84,6 +84,7 @@ func TestAPIRoutes(t *testing.T) {
 	mDB := dal.Database.(mockDB)
 	rbHostLogin := strings.NewReader(fmt.Sprintf(`{ "host": "%s", "apikey": "%s" }`, mDB.Lookup["Hostname"], mDB.Lookup["ApiKey"]))
 	responseHostLogin := fmt.Sprintf(`{"data":"%s"}`, mDB.Lookup["HostID"])
+	// unauthorizedErrorMsg := `{"error": "unauthorized"}`
 
 	tableSet2 := []struct {
 		name               string
