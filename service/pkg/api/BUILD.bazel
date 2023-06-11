@@ -1,4 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "go_library")
+load("@io_bazel_rules_go//go:def.bzl", "go_library", "go_test")
 
 go_library(
     name = "api",
@@ -14,10 +14,11 @@ go_library(
     importpath = "github.com/aeekayy/stilla/service/pkg/api",
     visibility = ["//visibility:public"],
     deps = [
+        "//service/api/protobuf:messages",
         "//service/lib/db",
         "//service/pkg/api/models",
         "//service/pkg/models",
-        "//service/pkg/utils:lib",
+        "//service/pkg/utils",
         "@com_github_confluentinc_confluent_kafka_go//kafka",
         "@com_github_getsentry_sentry_go//gin",
         "@com_github_gin_contrib_cache//persistence",
@@ -37,5 +38,23 @@ go_library(
         "@org_mongodb_go_mongo_driver//mongo/options",
         "@org_uber_go_ratelimit//:ratelimit",
         "@org_uber_go_zap//:zap",
+    ],
+)
+
+go_test(
+    name = "api_test",
+    srcs = [
+        "api_test.go",
+        "dal_test.go",
+    ],
+    embed = [":api"],
+    deps = [
+        "//service/pkg/models",
+        "@com_github_alicebob_miniredis_v2//:miniredis",
+        "@com_github_gin_contrib_cache//persistence",
+        "@com_github_gin_gonic_gin//:gin",
+        "@com_github_stretchr_testify//assert",
+        "@org_mongodb_go_mongo_driver//bson",
+        "@org_uber_go_zap//zaptest",
     ],
 )

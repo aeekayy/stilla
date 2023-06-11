@@ -13,6 +13,8 @@ import (
 	"github.com/aeekayy/stilla/service/pkg/utils"
 )
 
+// TODO: Use pgxmock for mock tests
+
 const charset = "abcdefghijklmnopqrstuvwxyz" +
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 

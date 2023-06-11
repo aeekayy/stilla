@@ -41,7 +41,7 @@ func HostRegister(dal *DAL) gin.HandlerFunc {
 		}
 
 		// Todo replace the response with a struct. Include the host ID in the response
-		c.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusCreated, gin.H{
 			"data": apiKey,
 		})
 	}
@@ -66,7 +66,7 @@ func HostLogin(dal *DAL) gin.HandlerFunc {
 
 		if err != nil {
 			dal.Logger.Errorf("unable to login host: %v", err)
-			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to login host"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "unable to login host"})
 			return
 		}
 

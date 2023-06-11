@@ -52,7 +52,7 @@ type MongoQueryResult struct {
 type DAL struct {
 	Cache         *persistence.RedisStore `json:"cache"`
 	Config        *svcmodels.Config       `json:"config"`
-	Database      *db.Conn                `json:"database"`
+	Database      db.DBIface                `json:"database"`
 	Context       *context.Context        `json:"context"`
 	DocumentStore *mongo.Client           `json:"document_store"`
 	Logger        *zap.SugaredLogger      `json:"logger"`
@@ -77,13 +77,13 @@ type HostCache struct {
 }
 
 // NewDAL returns a new DAL
-func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn *db.Conn, docStore *mongo.Client, cache *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
+func NewDAL(ctx *context.Context, sugar *zap.SugaredLogger, apm *newrelic.Application, config *svcmodels.Config, dbConn db.Conn, docStore *mongo.Client, store *persistence.RedisStore, producer *kafka.Producer, collection, sessionKey string) *DAL {
 	return &DAL{
 		Context:       ctx,
 		Config:        config,
 		Database:      dbConn,
 		DocumentStore: docStore,
-		Cache:         cache,
+		Cache:         store,
 		Collection:    collection,
 		Logger:        sugar,
 		Producer:      producer,
@@ -157,8 +157,9 @@ func (d *DAL) LoginHost(ctx *gin.Context, hostLoginIn models.HostLoginIn, req in
 // InsertConfig insert a configuration object into the document store. This
 // creates a new ConfigVersion object. The ObjectID of the ConfigVersion is then
 // used to update the Config object reference for ConfigVersion
-func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (string, error) {
+func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (string, bool, error) {
 	requestDetails := make(map[string]interface{})
+	upsertedRecord := false
 
 	httpReq := req.(*http.Request)
 	requestDetails["request.method"] = utils.SanitizeMessageValue(httpReq.Method)
@@ -176,6 +177,8 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 	// and Database.Collection method
 	d.EmitMessage("config.audit", "InsertConfig", requestDetails)
 
+	// TODO: Abstract this portion of code
+	// We want to support PostgreSQL in addition to MongoDB
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
 	configVersionCollection := d.DocumentStore.Database(configDB).Collection(configVersionCollectionlection)
 
@@ -201,7 +204,7 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 		// ErrNoDocuments means that the filter did not match any documents in
 		// the collection.
 		if err != mongo.ErrNoDocuments {
-			return "", fmt.Errorf("error accessing the collection: %s", err)
+			return "", upsertedRecord, fmt.Errorf("error accessing the collection: %s", err)
 		}
 	}
 
@@ -289,24 +292,33 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 
 	if qrConfigVersion.Error != nil {
 		d.Logger.Errorf("unable to insert configVersion: %v", qrConfigVersion.Error)
-		return "", fmt.Errorf("unable to ingest configVersion object: %s", qrConfigVersion.Error)
+		return "", upsertedRecord, fmt.Errorf("unable to ingest configVersion object: %s", qrConfigVersion.Error)
 	}
 
 	qrConfig := <-chConfig
 
 	if qrConfig.Error != nil {
 		d.Logger.Errorf("unable to insert config: %v", qrConfig.Error)
-		return "", fmt.Errorf("unable to insert config: %s", qrConfig.Error)
+		return "", upsertedRecord, fmt.Errorf("unable to insert config: %s", qrConfig.Error)
 	}
 
 	d.Logger.Infof("inserted configVersion %s", configID)
 	d.Logger.Infof("inserted config object %s", configID)
 
 	// write the configuration to the cache
-	configResult := qrConfig.Result
-	err = d.writeToCache(configID, hostID, configResult.(bson.M))
+	configResult := qrConfig.Result.(*mongo.UpdateResult)
+	if configResult.UpsertedCount != 0 {
+		var cacheResponse bson.M
 
-	return configID, err
+		err = configCollection.FindOne(
+			ctx,
+			bson.D{{"_id", configResult.UpsertedID}},
+		).Decode(&cacheResponse)
+		err = d.writeToCache(configID, hostID, cacheResponse)
+		upsertedRecord = true
+	}
+
+	return configID, upsertedRecord, err
 }
 
 // GetConfig returns a Config with the latest version of the ConfigVersion
@@ -328,10 +340,12 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	// check the cache first
 	d.EmitMessage("config.audit", "GetConfig", requestDetails)
 
+	// TODO: Abstract this portion of code
+	// We want to support PostgreSQL in addition to MongoDB
 	configCollection := d.DocumentStore.Database(configDB).Collection(configCollection)
-	cacheHit, err := d.readFromCache(configID, hostID)
-	if err == nil {
-		configResponse.Ingest(cacheHit)
+	cacheHit, cacheValue, err := d.readFromCache(configID, hostID)
+	if cacheHit {
+		configResponse.Ingest(cacheValue)
 		return configResponse, nil
 	} else if err != persistence.ErrCacheMiss {
 		return configResponse, err
@@ -379,7 +393,7 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 	}
 
 	// TODO fix the response. The config version is empty
-	configResponse.Ingest(&result)
+	configResponse.Ingest(result)
 
 	err = d.writeToCache(configID, hostID, result)
 
@@ -432,6 +446,8 @@ func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req inte
 	findOptions.SetProjection(bson.D{{"config_version", 0}})
 	var results []models.ConfigStore
 
+	// TODO: Abstract this portion of code
+	// We want to support PostgreSQL in addition to MongoDB
 	// see if there's an existing record
 	cursor, err := configCollection.Find(
 		ctx,
@@ -652,57 +668,56 @@ func ValidateToken(dal *DAL, hostID string, token string) (string, bool, error) 
 }
 
 // readFromCache reads a configuration from the cache
-func (d *DAL) readFromCache(configID, hostID string) (*bson.M, error) {
-	var cacheValue *bson.M
+// response: cachehit, body, err
+func (d *DAL) readFromCache(configID, hostID string) (bool, bson.M, error) {
+	var cacheValue bson.M
 	var respEnc string
-	var hostPrefix string
-	var resp bson.M
+	cacheHit := false
 
 	// if the cache is not enabled. Skip all of this.
 	if !d.CacheEnabled {
 		// TODO: this should not be an error
-		return cacheValue, fmt.Errorf("the cache is not enabled")
+		return cacheHit, cacheValue, fmt.Errorf("the cache is not enabled")
 	}
 
-	if hostID != "" {
-		hostPrefix = fmt.Sprintf("_%s", hostID)
-	}
-
-	// set the cache key
-	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
+	cacheKey := getCacheKey(configID, hostID)
 	err := d.Cache.Get(cacheKey, &respEnc)
 
-	if err == nil {
-		bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
-		if err != nil {
-			d.Logger.Errorf("unable to retrieve config: %v", err)
-			return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
-		}
-		err = bson.Unmarshal(bsonBin, resp)
-		if err != nil {
-			d.Logger.Errorf("unable to retrieve config: %v", err)
-			return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
-		}
-	} else if err != persistence.ErrCacheMiss {
+	if err == persistence.ErrCacheMiss {
+		d.Logger.Errorf("cache miss: %v", err)
+		return cacheHit, cacheValue, fmt.Errorf("cache miss: %v", err)
+	} else if err != nil {
 		d.Logger.Errorf("unable to retrieve config: %v", err)
-		return cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
+		return cacheHit, cacheValue, fmt.Errorf("unable to retrieve config: %v", err)
 	}
+
+	bsonBin, err := b64.StdEncoding.DecodeString(respEnc)
+	if err != nil {
+		d.Logger.Errorf("error decoding string: %v", err)
+		return cacheHit, cacheValue, fmt.Errorf("error decoding string: %v", err)
+	}
+	err = bson.Unmarshal(bsonBin, &cacheValue)
+	if err != nil {
+		d.Logger.Errorf("unable to unmarshal: %v", err)
+		return cacheHit, cacheValue, fmt.Errorf("unable to unmarshal: %v", err)
+	}
+
+	cacheHit = true
 
 	logLine := utils.SanitizeLogMessageF("cache hit for %s", cacheKey)
 	d.Logger.Info(logLine)
-	return cacheValue, nil
+	return cacheHit, cacheValue, nil
 }
 
 // writeToCache writes a configuration to the cache
 func (d *DAL) writeToCache(configID, hostID string, result bson.M) error {
-	var hostPrefix string
-
-	if hostID != "" {
-		hostPrefix = fmt.Sprintf("_%s", hostID)
+	if configID == "" {
+		d.Logger.Errorf("can not set cache for empty config ID")
+		return fmt.Errorf("can not set cache for empty config ID")
 	}
 
 	// set the cache key
-	cacheKey := fmt.Sprintf("config_%s%s", configID, hostPrefix)
+	cacheKey := getCacheKey(configID, hostID)
 
 	logLine := utils.SanitizeLogMessage("setting cache for %s", cacheKey)
 	d.Logger.Infof(logLine)
@@ -719,4 +734,16 @@ func (d *DAL) writeToCache(configID, hostID string, result bson.M) error {
 	}
 
 	return nil
+}
+
+// getCacheKey standardize the cache key for configs
+func getCacheKey(configID, hostID string) string {
+	var hostPrefix string
+
+	if hostID != "" {
+		hostPrefix = fmt.Sprintf("_%s", hostID)
+	}
+
+	// return the cache key
+	return fmt.Sprintf("config_%s%s", configID, hostPrefix)
 }

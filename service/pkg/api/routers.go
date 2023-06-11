@@ -191,7 +191,7 @@ var recordRoutes = Routes{
 	{
 		"GetRecords",
 		http.MethodGet,
-		"/records",
+		"/",
 		GetRecords,
 	},
 }

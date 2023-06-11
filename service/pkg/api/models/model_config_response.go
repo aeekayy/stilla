@@ -11,6 +11,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -33,7 +34,11 @@ type ConfigResponse struct {
 }
 
 // Ingest ingest data from a BSON map
-func (cr *ConfigResponse) Ingest(b *bson.M) error {
+func (cr *ConfigResponse) Ingest(b bson.M) error {
+	if b == nil {
+		return errors.New("can't ingest nil map")
+	}
+
 	m, err := bson.Marshal(b)
 
 	if err != nil {

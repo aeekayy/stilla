@@ -32,13 +32,18 @@ func AddConfig(dal *DAL) gin.HandlerFunc {
 		}
 
 		// span := sentry.StartSpan(c, "config.insert")
-		configID, err := dal.InsertConfig(c, req, c.Request)
+		configID, upsertedRecord, err := dal.InsertConfig(c, req, c.Request)
 		// span.Finish()
 
 		if err != nil {
 			output := utils.SanitizeErrorMessage(err, req.ConfigName)
 			dal.Logger.Errorf("unable to insert config: %v", output)
 			c.JSON(http.StatusBadRequest, gin.H{"error": "unable to insert configuration"})
+			return
+		}
+
+		if ! upsertedRecord {
+			c.Status(http.StatusNoContent)
 			return
 		}
 

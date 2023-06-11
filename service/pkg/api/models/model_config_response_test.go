@@ -28,7 +28,7 @@ func TestIngestPositive(t *testing.T) {
 		"modified":       "2022-12-03T08:36:24.972Z",
 	}
 
-	err := cr.Ingest(&bmap)
+	err := cr.Ingest(bmap)
 
 	if err != nil {
 		t.Errorf("error ingesting the map: %s", err)
