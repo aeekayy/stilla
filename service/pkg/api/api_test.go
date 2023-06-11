@@ -97,11 +97,6 @@ func TestAPIRoutes(t *testing.T) {
 		{"testLoginHostNegative", http.MethodPost, "/host/login", nil, http.StatusBadRequest, "{\"error\":\"unable to login host\"}" },
 	}
 
-	type HostLoginIn struct {
-		APIKey string `form:"apikey" json:"apikey" yaml:"apikey"`
-		Host   string `form:"host" json:"host" yaml:"host"`
-	}
-
 	for _, tc := range tableSet2 {
 		t.Run(tc.name, func(t *testing.T) {
 			w := httptest.NewRecorder()
