@@ -5,11 +5,13 @@ database:
   password: "postgres"
   host: "localhost"
   name: "stilla"
+  port: 5432
 cache:
   type: "redis"
-  host: "localhost"
+  host: "localhost:6379"
   username: "default"
   password: ""
+  port: 6379
 docdb:
   username: "mongo"
   password: "mongo"
@@ -21,4 +23,4 @@ server:
 kafka:
   bootstrap.servers: "localhost:9092"
   session.timeout.ms: 45000
-audit: true
+audit: false

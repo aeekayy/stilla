@@ -39,6 +39,8 @@ const (
 	configVersionCollectionlection = "config_version"
 	serviceName                    = "stilla"
 	dateFormat                     = "2021-02-03T04:55:46.607+08:00"
+	docDBType_Mongo					= "mongodb"
+	docDBType_PGSQL					= "postgresql"
 )
 
 // MongoQueryResult used to manage Mongo query results from channels
@@ -158,6 +160,45 @@ func (d *DAL) LoginHost(ctx *gin.Context, hostLoginIn models.HostLoginIn, req in
 // creates a new ConfigVersion object. The ObjectID of the ConfigVersion is then
 // used to update the Config object reference for ConfigVersion
 func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (string, bool, error) {
+	var configID string
+	var addedConfig bool
+	var err error
+
+	switch  d.Config.DocDB.Type {
+	case docDBType_PGSQL:
+		configID, addedConfig, err = d.insertPgConfig(ctx, configIn, req)
+	default:
+		configID, addedConfig, err = d.insertMongoConfig(ctx, configIn, req)
+	}
+	return configID, addedConfig, err
+}
+
+// insertPgConfig InsertConfig for MongoDB
+func (d *DAL) insertPgConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (string, bool, error) {
+	requestDetails := make(map[string]interface{})
+	upsertedRecord := false
+
+	httpReq := req.(*http.Request)
+	requestDetails["request.method"] = utils.SanitizeMessageValue(httpReq.Method)
+	requestDetails["request.header"] = utils.SanitizeMessageValue(httpReq.Header)
+	requestDetails["request.protocol"] = utils.SanitizeMessageValue(httpReq.Proto)
+	requestDetails["request.contentlength"] = utils.SanitizeMessageValue(httpReq.ContentLength)
+	requestDetails["request.host"] = utils.SanitizeMessageValue(httpReq.Host)
+	requestDetails["request.uri"] = utils.SanitizeMessageValue(httpReq.RequestURI)
+	requestDetails["request.remoteaddr"] = utils.SanitizeMessageValue(httpReq.RemoteAddr)
+	requestDetails["config"] = utils.SanitizeMessageValue(configIn)
+	// get the host
+	hostID := ctx.GetString("x-host-id")
+
+	// select database and collection ith Client.Database method
+	// and Database.Collection method
+	d.EmitMessage("config.audit", "InsertConfig", requestDetails)
+	
+	return "", false, nil
+}
+
+// insertMongoConfig InsertConfig for MongoDB
+func (d *DAL) insertMongoConfig(ctx *gin.Context, configIn models.ConfigIn, req interface{}) (string, bool, error) {
 	requestDetails := make(map[string]interface{})
 	upsertedRecord := false
 
@@ -323,6 +364,25 @@ func (d *DAL) InsertConfig(ctx *gin.Context, configIn models.ConfigIn, req inter
 
 // GetConfig returns a Config with the latest version of the ConfigVersion
 func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req interface{}) (models.ConfigResponse, error) {
+	var configResponse models.ConfigResponse
+	var err error
+
+	switch  d.Config.DocDB.Type {
+	case docDBType_PGSQL:
+		configResponse, err = d.getPgConfig(ctx, configID, hostID, req)
+	default:
+		configResponse, err = d.getMongoConfig(ctx, configID, hostID, req)
+	}
+	return configResponse, err
+}
+
+// getPgConfig returns the configuration from Postgresql
+func (d *DAL) getPgConfig(ctx *gin.Context, configID string, hostID string, req interface{}) (models.ConfigResponse, error) {
+	return models.ConfigResponse{}, nil
+}
+
+// getMongoConfig returns the configuration from MongoDB
+func (d *DAL) getMongoConfig(ctx *gin.Context, configID string, hostID string, req interface{}) (models.ConfigResponse, error) {
 	requestDetails := make(map[string]interface{})
 	var configResponse models.ConfigResponse
 
@@ -402,6 +462,25 @@ func (d *DAL) GetConfig(ctx *gin.Context, configID string, hostID string, req in
 
 // GetConfigs returns a paginated slice of Configs from the document store
 func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req interface{}) ([]models.ConfigStore, error) {
+	var configStore []models.ConfigStore
+	var err error
+
+	switch  d.Config.DocDB.Type {
+	case docDBType_PGSQL:
+		configStore, err = d.getPgConfigs(ctx, offset, limit, req)
+	default:
+		configStore, err = d.getMongoConfigs(ctx, offset, limit, req)
+	}
+	return configStore, err
+}
+
+// getMongoConfigs returns a list of configurations from Postgresql
+func (d *DAL) getPgConfigs(ctx *gin.Context, offset string, limit string, req interface{}) ([]models.ConfigStore, error) {
+	return []models.ConfigStore{}, nil
+}
+
+// getMongoConfigs returns a list of configurations from MongoDB
+func (d *DAL) getMongoConfigs(ctx *gin.Context, offset string, limit string, req interface{}) ([]models.ConfigStore, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)
@@ -469,6 +548,25 @@ func (d *DAL) GetConfigs(ctx *gin.Context, offset string, limit string, req inte
 
 // UpdateConfigByID Updates a configuration by the ID
 func (d *DAL) UpdateConfigByID(ctx *gin.Context, configID string, updateConfigIn models.UpdateConfigIn, req interface{}) (interface{}, error) {
+	var updated interface{}
+	var err error
+
+	switch  d.Config.DocDB.Type {
+	case docDBType_PGSQL:
+		updated, err = d.updatePgConfigByID(ctx, configID, updateConfigIn, req)
+	default:
+		updated, err = d.updateMongoConfigByID(ctx, configID, updateConfigIn, req)
+	}
+	return updated, err
+}
+
+// updatePgConfigByID updates configuration in Postgresql
+func (d *DAL) updatePgConfigByID(ctx *gin.Context, configID string, updateConfigIn models.UpdateConfigIn, req interface{}) (interface{}, error) {
+	return nil, nil
+}
+
+// updateMongoConfigByID updates configuration in MongoDB
+func (d *DAL) updateMongoConfigByID(ctx *gin.Context, configID string, updateConfigIn models.UpdateConfigIn, req interface{}) (interface{}, error) {
 	requestDetails := make(map[string]interface{})
 
 	httpReq := req.(*http.Request)

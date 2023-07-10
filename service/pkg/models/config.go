@@ -86,6 +86,7 @@ type Cache struct {
 	Username string `yaml:"username" json:"username" mapstructure:"username"`
 	Password string `yaml:"password" json:"password" mapstructure:"password"`
 	Type     string `yaml:"type" json:"type" mapstructure:"type"`
+	Port     int    `yaml:"port" json:"port" mapstructure:"port"`
 }
 
 // Database Cache struct to hold Postgres configuration
@@ -95,6 +96,7 @@ type Database struct {
 	Host       string `yaml:"host" json:"host" mapstructure:"host"`
 	Name       string `yaml:"name" json:"name" mapstructure:"name"`
 	Parameters string `yaml:"parameters" json:"parameters" mapstructure:"parameters"`
+	Port       int    `yaml:"port" json:"port" mapstructure:"port"`
 }
 
 // DocumentDatabase Cache struct to hold MongoDB configuration
@@ -105,6 +107,8 @@ type DocumentDatabase struct {
 	Name     string `yaml:"name" json:"name" mapstructure:"name"`
 	Timeout  string `yaml:"timeout" json:"timeout" mapstructure:"timeout"`
 	DNSSeed  bool   `yaml:"dns_seed" json:"dns_seed" mapstructure:"dns_seed"`
+	Type     string `yaml:"type" json:"type" mapstructure:"type"`
+	Port		int `yaml:"port" json:"port" mapstructure:"port"`
 }
 
 // Server struct to hold web server configuration
@@ -143,6 +147,7 @@ func GetConfig(in string) (*Config, error) {
 
 	viper.SetDefault("audit", false)
 	viper.SetDefault("docdb.timeout", "15s")
+	viper.SetDefault("docdb.type", "mongodb")
 
 	if err != nil {
 		return nil, fmt.Errorf("unable to decode into config struct, %v", err)

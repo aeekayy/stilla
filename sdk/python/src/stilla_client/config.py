@@ -1,6 +1,6 @@
 from pydantic import BaseModel, validator, UUID4
 import requests
-from typing import Mapping
+from typing import Mapping, Any
 import validators
 
 
@@ -56,6 +56,27 @@ class Config(BaseModel):
             return {"error": "connection timeout"}
         except requests.ConnectionError:
             return {"error": "connection error"}
+        except Exception as e:
+            return {"error": e}
+        
+    def get_config_value(self, key: str, config_key: str) -> Any:
+        """_summary_
+
+        Args:
+            key (str): The configuration key to retrieve.
+
+        Raises:
+            ValueError: Value was not found in map.
+
+        Returns:
+            any: Returns the value in its format.
+        """
+        configuration = self.get_config(key)
+        try:
+            value = configuration[config_key]
+            return value
+        except ValueError:
+            return {"error": "invalid key. value not found."}
         except Exception as e:
             return {"error": e}
 
